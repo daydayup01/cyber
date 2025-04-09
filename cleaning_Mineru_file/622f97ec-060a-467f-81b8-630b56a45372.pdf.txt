@@ -1,0 +1,348 @@
+# APT32常用诱饵文件分析  
+
+山石网科情报中心山石网科安全技术研究院2024-05-2116:59广东  
+
+## 事件概述  
+
+随着越来越多个人隐私和重要数据通过各种办公软件存储在电子文档中，针对办公软件的攻击事件不断发生，各种办公软件安全问题日趋严重！  
+
+办公软件存在安全问题的根本原因在于其文档格式解析和执行存在缺陷，即软件安全漏洞。  
+
+本文将通过研究海莲花组织(APT32)针对Office软件进行恶意攻击的三个样本，总结其技术特征，分析Office文档漏洞的主要利用手法，并提供防御与检测建议。  
+
+## No.1 组织介绍  
+
+APT32，是一个长期针对中国及其他东亚国家进行攻击的APT组织。攻击领域涉及政府机构，政府部门，医疗卫生，国防，通信等等，常用手法包括白利用、DLL劫持、多阶段加载、混淆加密等等。  
+
+## No.2 攻击手法  
+
+# APT32常用诱饵文件分析  
+
+将包含恶意代码的程序打包成自解压文件，伪装成word文档，通过网络钓鱼、社会工程等，诱使受害者打开。  
+
+  
+
+打开后，弹出诱饵文档窗口，在后台加载恶意程序。  
+
+  
+APT32常用诱饵文件分析  
+
+  
+
+  
+
+## 样本一：白利用  
+
+sha256:dbde2b710bee38eb3ff1a72b673f756c27faa45d5c38cbe0f8a5dfccb16c18ba  
+
+### No.1 攻击背景  
+
+### 攻击手法  
+
+伪装成word文档，通过社会工程学诱导受害者点击执行，通过白利用方法绕过安全检测，加载恶意程序。  
+
+  
+
+如上所示，攻击者将携带签名的白文件、恶意DLL、加密后的代码文件打包成自解压格式的诱饵文档，诱使受害者打开。  
+
+  
+
+诱饵文档被执行后会释放所有文件，并且执行"MicrosoftUpdate.exe"，通过白文件利用的方法，加载恶意的SoftwareUpdateFilesLocalized.dll。恶意DLL读取加密的shellcode 文件-SoftwareUpdateFiles.local 并 将恶意的 shellcode 注入MicrosoftUpdate.exe中。  
+
+No.2 TTPS  
+
+  
+
+## 样本关联分析拓扑  
+
+  
+
+  
+
+### No.3 详细分析  
+
+#### 静态分析  
+
+DIE打开后，可以看出它是一个压缩文件，包括4个文件，2个目录  
+
+  
+APT32常用诱饵文件分析  
+
+分析白文件MicrosoftUpdate.exe，可以看到其导入表中并未包含恶意dll一SoftwareUpdateFilesLocalized  
+
+  
+APT32常用诱饵文件分析  
+
+#### 动态调试  
+
+#### DLL侧加载  
+
+跟踪DLL的加载，程序通过ntdll.ZwMapViewOfSection将导入表中的DLL映射到内存中，而恶意的SoftwareUpdateFilesLocalized.dll存放于程序目录  
+
+\~\SoftwareUpdateFiles.Resources\en.lproj\SoftwareUpdateFilesLocalized.dll下，可以推测其利用了DLL侧加载技术。  
+
+如下图所示：其在SoftwareUpdatefiles.10002F44通过LoadLibraryW加载进入内存  
+
+<html><body><table><tr><td>83C1F0 mov</td><td>add eCX,FFFFFFFO byte ptr ss:ebp-4],3</td><td>ecx:constAsuResourceProxy::vttable'+184</td></tr><tr><td>C645 FC03 E802E2FFFF</td><td>ca11 softwareupdatefiles.10001128</td><td rowspan="3"></td></tr><tr><td>66:8B45E8</td><td>mov ax,word ptr ss:ebp-18]</td></tr><tr><td>68F8090310</td><td>pushsoftwareupdatefi1es.1003D9Fs</td></tr><tr><td>8BCF</td><td>movecx,edi</td><td>ecx:constAsuResourceProxy::vftab1e'+184,</td></tr><tr><td>66:894606</td><td>mov word ptr ds:[esi+6],ax call softwareupdatefiles.100017F4</td><td></td></tr><tr><td>E8 BAE8FFFF 85C0</td><td>testeax,eax</td><td></td></tr><tr><td>0F84 13010000</td><td>jesoftwareupdatefiles.10003055</td><td>[edi]：L"C:\\Users\\33728\\Desktop\\样本分析平</td></tr><tr><td>FF37</td><td>pushdword ptrds:[edi] calldwordptrds:kLoadlibraryw>]</td><td></td></tr><tr><td>FF15 BCD10310</td><td>mov dword ptr ds:[esi+c],eax</td><td></td></tr><tr><td>8946 OC 3BC3</td><td>cmp eax,ebx</td><td></td></tr><tr><td>750C</td><td>jne softwareupdatefiles.1o002F5D</td><td>ecx:constASuResourceProxy::vftab1e'+184</td></tr><tr><td>8BCE</td><td>mov ecx,esi</td><td></td></tr><tr><td>E808F4FFFF</td><td>call <softwareupdatefiles.private:void -thiscaiiA</td><td></td></tr><tr><td>E9 F8000000</td><td>jmp softwareupdatefiles.1o003055 leaeax,dword ptr ss:[ebp-2c]</td><td></td></tr><tr><td>8D45D4</td><td>push eax</td><td></td></tr><tr><td>50</td><td>cal1 dword ptr ds:[<GetLocalTime>]</td><td></td></tr><tr><td>FF15 A4D10310</td><td></td><td></td></tr><tr><td>33CO</td><td>xor eax，eax</td><td></td></tr><tr><td>68 FE010000</td><td>push 1FE</td><td>公众号·山石网科安全技术研究院</td></tr><tr><td>66:89451C</td><td>mov word ptr ss:[ebp+ic],ax</td><td></td></tr><tr><td>8D451E</td><td>1ea eax,dword ptr ss:[ebp+iE]</td><td></td></tr><tr><td>53</td><td>push ebx</td><td></td></tr><tr><td></td><td>push eax</td><td></td></tr><tr><td>50</td><td></td><td></td></tr></table></body></html>  
+
+#### Shellcode加载之反射型DLL注入  
+
+攻击者从内存而非磁盘向指定进程注入DLL的技术，相比之下更为隐蔽，不需要硬盘文件和Windows加载程序的辅助，因而逃离了一般检测软件、系统程序的监控。  
+
+实现流程  
+
+#### 1．获取目标进程的句柄  
+
+2．内存分配空间，注入shellcode  
+
+3．加载所需系统DLL  
+
+4．重构导入表  
+
+5．打开进程，进入DLL入口点，执行注入的恶意代码  
+
+具体分析如下，用IDA静态分析加载的恶意DLL，找到sub_10001020函数，可以看到其通过VirtualAlloc函数重新分配内存空间，并加载shellcode  
+
+  
+
+进入sub_100010c0中，异或解密算法如下所示，通过密钥String循环解密  
+
+  
+
+使用x64dbg，可以看到内存中加载的SoftwareupdatefilesLocalized.local内容如下所示  
+
+<html><body><table><tr><td>内存1</td><td colspan="2">内存2</td><td colspan="2">内存3</td><td colspan="2">内存4</td><td colspan="2">内存5</td><td colspan="2">监视1 [x=]局部变量</td><td>结构体</td></tr><tr><td>地址</td><td colspan="3">十六进制</td><td colspan="2"></td><td colspan="3"></td><td>ASCII</td><td></td><td>0</td></tr><tr><td>02BBO00O</td><td colspan="3">AD AD D1 35 OC</td><td colspan="2">FC 8A 98 26</td><td colspan="3">70 81 29 52</td><td>..N5.u..&p.)RiO{</td><td></td><td>口</td></tr><tr><td>02BB0010</td><td>25 4E 4C</td><td>C6</td><td>AB 51</td><td>58 11</td><td>GE 54</td><td>04 20</td><td>A1D57B E2 OB A6DE</td><td>96NLA《QX.nT.a.D</td><td></td><td></td><td>口</td></tr><tr><td>02BB0020</td><td>3F OA</td><td>4E A7</td><td>21 E8</td><td>76 4F</td><td>D6 ED</td><td>12 ES</td><td>F9 F6 DA 34</td><td>7N5!evo0i.auoU4</td><td></td><td></td><td></td></tr><tr><td>02BB0030</td><td>1E EC</td><td>2D 41</td><td>BE OE</td><td>OD 7A</td><td>11 26</td><td>OC F3</td><td>5F A1 FA</td><td>C3</td><td>1-A%..Z.&.6_1UA</td><td></td><td></td></tr><tr><td>02BB0040</td><td>A7 9E</td><td>03 D3</td><td>60 92</td><td>2C 6E</td><td>E9 C9</td><td>A5 8F</td><td>4F 70 81</td><td>80 5..o.,neE￥.op.</td><td></td><td></td><td></td></tr><tr><td>02BBO050</td><td>5D 01</td><td>FA 7D</td><td>98 DF</td><td>49 86</td><td>68 A7</td><td>DA 60</td><td>42 77 D5</td><td>A8</td><td>]u.BI.hsUBwO</td><td></td><td></td></tr><tr><td>02BB0060</td><td>F6 CA</td><td>9D 37</td><td>F3</td><td>F8 5C 6F</td><td>7E 59</td><td>60 BF</td><td>OB F1 BC</td><td>84</td><td>OE.760\0~YU2.n%.</td><td></td><td></td></tr><tr><td>02BB0070</td><td>C6 AF</td><td>E9 D8</td><td>38</td><td>AF 10 3C</td><td>D3 E1</td><td>71 61</td><td>10 C2 D2</td><td>73</td><td>e08.0aqa.Aos</td><td></td><td></td></tr><tr><td>02BB0080</td><td>C2 06</td><td>04</td><td>FF 15</td><td>7D 1F</td><td>80 50 23</td><td>AA DC</td><td>CE DO 3F</td><td>59</td><td>A..y.}..P#=UID?Y</td><td></td><td></td></tr><tr><td>02BB0090</td><td>9F 5B</td><td>4A</td><td>C3 84</td><td>CC 07</td><td>FO 4F</td><td>21 FE 24</td><td>7D 01 OD</td><td>E8</td><td>[JA.f.ao!p$}..e</td><td></td><td></td></tr><tr><td>02BBO0AO</td><td>55 EE</td><td>60</td><td>DF BA</td><td>9B 8C</td><td>72 CD</td><td>E6 DA EE</td><td>12 AB E4</td><td>4A</td><td>Ui.oB..frUia.《a]</td><td></td><td></td></tr><tr><td>02BBOOBO</td><td>10 35</td><td>9E</td><td>7A 59</td><td>BA 34</td><td>DF BC</td><td>20 7F E8</td><td>E7 17</td><td>CD DE</td><td>.5.zYo4B%.ec.fD</td><td></td><td></td></tr><tr><td>02BBOOCO</td><td>37 3A</td><td>55</td><td>29 A9</td><td>8D 8A</td><td>06 D3</td><td>63 D5 16</td><td>E4 D7</td><td>1E.5E 7-0</td><td></td><td></td><td></td></tr><tr><td>02BBOODO</td><td>42 F4</td><td>4B</td><td>A9 C8</td><td>86 OB</td><td>2D 77</td><td>49 C1</td><td>F9 EE</td><td>E2BB</td><td></td><td></td><td></td></tr><tr><td>02BB00EO</td><td>OC 88</td><td>06</td><td>32 25</td><td>D7 8E</td><td>8E BC</td><td>8A 544F</td><td>D456</td><td>EE34</td><td>..2%X..4.T00V14</td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></body></html>  
+
+#### 经过解密算法后，shellcode恢复如下  
+
+<html><body><table><tr><td>地址</td><td colspan="6">十六进制</td><td>ASCII</td><td></td></tr><tr><td>02BBOOOO</td><td>DAC5B85B</td><td></td><td></td><td>43B1DAD9</td><td></td><td>7424F45D</td><td>31C9 B9 1A</td><td>UA.[C±UUt$o]1E'</td><td></td></tr><tr><td>02BB0010</td><td>6B 05</td><td>00 83</td><td>C5</td><td>04 31 45</td><td>17</td><td>0345 4C</td><td>A144 EB BB</td><td>K...A.1E..ELiDe</td><td></td></tr><tr><td>02BB0020</td><td>64 45</td><td>OB D3</td><td>73 68</td><td>14 23</td><td>97 845C</td><td>AO 8BB7</td><td>B4 7F dE.Os..#..</td><td></td><td></td></tr><tr><td>02BB0030</td><td>57 B8</td><td>44 37</td><td>DB 7C</td><td>64 2E</td><td>48 76</td><td>65 BO 3A</td><td>D3 8D A6</td><td>WD70|d.Hve:O.</td><td></td></tr><tr><td>02BB0040</td><td>C4 DB</td><td>4D 9C</td><td>2C DB</td><td>4D 20</td><td>AD 85 CC</td><td>E1 26 3F</td><td>CF E1 A0M..0M..1a&?Ia</td><td></td><td></td></tr><tr><td>02BBO050</td><td>69 12</td><td>9F 09</td><td>E1 93</td><td>1F C9</td><td>31 C6</td><td>94 25 36 05</td><td>9A E6 ..a..E1A.%6..</td><td></td><td></td></tr><tr><td>02BB0060</td><td>B2 8B</td><td>D3 5E</td><td>92 B6</td><td>3F 2A</td><td>1F 3A</td><td>9C D2 7B 06</td><td>D3 D2</td><td>0A.17*.:.0.00</td><td></td></tr><tr><td>02BB0070</td><td>83 DD</td><td>90 B7</td><td>5F DD</td><td>51 72</td><td>BO B5</td><td>38 OE 5E 8D</td><td>86 36</td><td>Y.._YQr*u8...6</td><td></td></tr><tr><td>02BB0080</td><td>BO 75</td><td>65 AA</td><td>46 35</td><td>79 F5</td><td>1C 62</td><td>E4 95 AD</td><td>B8 6C 2D</td><td>ue-F5yo.ba...1-</td><td></td></tr><tr><td>02BB0090</td><td>DE 37</td><td>03 85</td><td>ED B8</td><td>6F 84</td><td>60 74</td><td>BO 40 11 44</td><td>44 85</td><td>P7..1.o..t@.DD.</td><td></td></tr><tr><td>02BBO0AO</td><td>25 8B</td><td>5B F3</td><td>9E D7</td><td>ES 8E</td><td>17 AA</td><td>9A 8F 51 CO</td><td>A6 05</td><td>%.[o.xa....QA</td><td></td></tr><tr><td>02BBOOBO</td><td>69 74</td><td>D2 2F</td><td>15 D3</td><td>57 BE</td><td>CE 6E 3A</td><td>9C 82 45</td><td>83 9F</td><td>ito/.ow41n:..E.</td><td></td></tr><tr><td></td><td></td><td>2047</td><td>EA F9</td><td>C3 FC</td><td>BO 09</td><td>A5 77 B3</td><td>8F 4A OF</td><td>[GeuAu·.w".]</td><td></td></tr><tr><td>02BBOOCO 02BBO0DO</td><td>5B 5B 10 9F</td><td>03D9</td><td>FC C3</td><td>33 43</td><td>3A 3A 82D4B7</td><td>B7 A4 B1 DBD9 2C 3C 9E</td><td>84 87 DC 1D AA 4D OawN.O.0U</td><td>DA3C:</td><td>科安全技术研究院</td></tr></table></body></html>  
+
+  
+反汇编后结果如下  
+
+然后，通过LoadLibraryExW函数确定系统DLL的位置，导入所需DLL  
+
+# APT32常用诱饵文件分析  
+
+  
+
+在 Local\Temp目录下，创建New TextDocument.doc诱饵文档，使用WINWORD.EXE进程打开  
+
+  
+
+使用RtlMoveMemory，VirtualAlloc重新分配内存空间  
+
+# APT32常用诱饵文件分析  
+
+<html><body><table><tr><td rowspan="2"></td><td rowspan="2">02E9AA81 02E9AA84</td><td>890C24</td><td>movdwordptr ss:esp],ecx</td><td rowspan="2">[ebp-34]:virtualA1loc</td></tr><tr><td>FF55CC cal1 8945C8</td><td>dwordptrss:[ebp-34]</td></tr><tr><td></td><td>02E9AA87 02E9AA8A</td><td></td><td>movdwordptr ss:[ebp-38],eax</td><td></td></tr><tr><td></td><td>85C0</td><td>testeax,eax 2E9A1E8</td><td></td><td></td></tr><tr><td>02E9AA8C 02E9AA91</td><td>3B5718</td><td>E957F7FFFF jmp</td><td></td><td>edi+18:Rt1zeroMemory+18</td></tr><tr><td></td><td></td><td>cmp OF83CF000000 jae</td><td>edx,dword ptrds:[edi+18]</td><td></td></tr><tr><td></td><td>02E9AA94 02E9AA9A</td><td>8B4DF4</td><td>2E9AB69</td><td></td></tr><tr><td></td><td>02E9AA9D</td><td>E9DFDEFFFF</td><td>mov ecx,dword ptr ss:[ebp-c] 2E98981</td><td></td></tr><tr><td></td><td>02E9AAA2</td><td>8B45D0</td><td>jmp mov eax,dword ptr ss:[ebp-30</td><td>公众号 山石网科安全技术研究院</td></tr><tr><td></td><td>02E9AAA5</td><td>8B4DB8</td><td>mov ecx,dword ptr ss: ebp-48</td><td>[ebp-48]:Rt1MoveMemory</td></tr><tr><td></td><td>02E9AAA8</td><td>8D6424FC</td><td>leaesp,dword ptr ss:esp-4]</td><td></td></tr></table></body></html>  
+
+#### Shellcode执行  
+
+最后，执行其注入的恶意代码，这是一个DenseRAT木马程序，尝试连接tripplekill.mentosfontcmb.com的46405端口，由于端口已失效，连接失败。  
+
+#### 反调试技术  
+
+动态调试过程中，可以发现其使用了Sleep长延时函数  
+
+<html><body><table><tr><td>0329E528 0329E529</td><td>5D C3</td><td>pop ebp ret</td><td></td></tr><tr><td>0329E52A 0329E52F</td><td>68983A0000</td><td>push 3A98 cal1 dword ptrds:[<&sleep>]</td><td></td></tr><tr><td>0329E535</td><td>FF1518D12C03 6A00</td><td>push</td><td></td></tr><tr><td>0329E537</td><td>FF15 34D02C03</td><td>cal1 dwordptrds:[<&setLastError>]</td><td></td></tr><tr><td>0329E53D</td><td>837DF408</td><td>dwordptr cmp ss:[ebp-aJ,8</td><td>山石网科安全技术研究院</td></tr><tr><td>0329E541 0329E544</td><td>8B45 EO 0F83 08000000</td><td>mov eax.dword ptrss:[ebp-20] jae 329E552</td><td></td></tr></table></body></html>  
+
+### No.4yara规则  
+
+针对该样本，其主要行为特征如下，可以以此为方向，提取静态特征，编写yara规则进行检测。  
+
+1．DLL侧链加载技术：如何辨别加载的DLL是否为恶意的  
+
+2．异或解密算法：Xor特征  
+
+#### 3．DLL反射型注入技术：注入特征 Xor解密特征检测  
+
+  
+
+#### 进程注入  
+
+ruleHook_injection meta: generated_by=“mkYARA-By JelleVergeen" date="2024-04-2512:40" version="1.0" hash="b'y\xf2v_0}\xe8\xb0r\x04\xf3\x17\xbd85q  
+
+call ebx   
+xor ebx,ebxcl   
+cmp eax,ebx   
+je100010ach   
+lea edx, ebp - 4]   
+push edx   
+push 40h   
+lea esi,[eax +0f64ch]  
+
+  
+
+## 样本二：OCX控件漏洞  
+
+sha256:58e294513641374ff0b42b7c652d3b4a471e8bde8664a79311e4244be0546df4  
+
+### No.1 攻击背景  
+
+OCX(对象链接和嵌入用户控件)遵循OLE标准，基于ActiveX技术，被设计来支持混合文档文档(声音、动画)，即查即用。然而，由于控件开发设计应用多元自由，极易受到黑客恶意攻击，不断有相关漏洞被披露。  
+
+### 攻击手法  
+
+如下图所示，伪装成Word文档的自解压程序，包括一个word文档和一个ActiveX控件。通过自解压命令行参数，调用regsvr32.exe运行ActiveX控件，加载恶意的OcX  
+
+文件，导致在内存中自加载后门模块，加载完成后与C2建立连接，接收控制指令。  
+
+  
+
+  
+
+  
+
+### No.3 详细分析  
+
+#### 静态分析  
+
+使用DIE查看OCX文件，发现只导入了Kernel.dll，导出DlIRegisterServer。可以推测其他函数是动态加载的。  
+
+  
+
+#### 动态分析  
+
+#### 恶意代码载入  
+
+自解压后，创建regsvr32.exe进程，运行命令"/s /i{bb31f5a0-a119-4667-ba38-3cf4ceee97bf}.ocx"  
+
+#### OCX分析  
+
+通过LoadResource加载OCX文件中恶意的shellcode，调用RtlAllocateHeap在内存中分配空间，将恶意的shellcode分配到内存中。  
+
+  
+
+# APT32常用诱饵文件分析  
+
+然后通过多重循环解密，解密出配置信息、域名以及所需的DLL，跳转进入后门模块。  
+
+最后创建WINWORD.exe，释放并执行诱饵文档  
+
+  
+
+#### 后门模块分析  
+
+通过DnsQueryEx查询域名  
+
+  
+
+#### 调用ws2_32.dll.sendto进行UDP通信，查询域名  
+
+<html><body><table><tr><td>MB6SD8C</td><td>FF35 88E6B804</td><td>pushdwordptr ds:4B8E688</td><td></td><td></td></tr><tr><td>04B65092</td><td>FF15 8031B804</td><td>dwordptr</td><td>ds:[<&sendto>]</td><td></td></tr><tr><td></td><td>04B65D98</td><td>83BD C8FEFFFF 10</td><td>cmp dword ptr ss:[ebp 138].10</td><td></td></tr><tr><td></td><td></td><td>8985 B0FEFFFF 720F</td><td>movdwordptrss:[ebp-150] .eax</td><td></td></tr></table></body></html>  
+
+查询注册表，收集主机信息  
+
+加载rasadhlp.dll，cryptsp.dll模块，加密数据，生成传输密钥  
+
+# APT32常用诱饵文件分析  
+
+  
+通过WinHttpOpen发送HTTP请求  
+
+  
+
+通过CreateRemoteThreadEx在远程进程中创建线程，试图建立连接  
+
+<html><body><table><tr><td>CC</td><td>int3 push</td><td></td></tr><tr><td></td><td>68COB9FC74 push kerne1base.74FcB9c0</td><td></td></tr><tr><td>IECE</td><td>E8ADAC0700 kerne1base.74F48E8C 8B7508 moves1,dwordptrss:[ ebpi</td><td></td></tr><tr><td></td><td>mov.dwordptrss:Iebp-23</td><td>[ebp-234]:"nnggmpggmeggmkggmfggnnggnjgg.1jm1ajip.andreagbrf</td></tr><tr><td>8B450C</td><td>mov eax,dword ptrss ebp+c</td><td></td></tr><tr><td>884D14 898D ACFDFFFF</td><td>mov ecx.dwordptr ss: ebp+l mov dwordptrss: ebp-</td><td></td></tr></table></body></html>  
+
+### No.4yara规则  
+
+针对该样本，主要是检测ocx文件中，是否存在shellcode。可以基于shellcode的特征，编写yara规则进行检测：  
+
+shellcode常见特征：  
+
+1．使用PIC技术  
+2．常用POP，call指令  
+3．常用LoadLibrary等函数  
+4.需要识别执行位置  
+5．需要查找Kernel.dll并解析  
+
+## 样本三：RTF的OLE对象漏洞  
+
+sha256:e7f997778ca54b87eb4109d6d4bd5a905e8261ad410a088daec7f3f695bb8189  
+
+### No.1攻击背景  
+
+RTF(Rich Text Format)，即富文本格式，是微软公司为进行文本和图像信息格式交换而制定。  
+
+RTF文件并不支持任何宏语言，但可以通过\object控制字支持OLE对象以及Macintosh Edition Manager订阅者对象。  
+
+OLE(object linking and embedding)，即对象链接和嵌入，是一种面向对象的技术，允许在程序之间链接和嵌入对象数据，从而建立复合文档。微软 MS Office 97-  
+
+2003的各种文件格式（DOC、RTF、XLS 和PPT等）都采用OLE技术存储文件规范。通过该规范，一个文件不仅可以包含文本，还可以包括图形、电子表格、甚至声音视频信息。  
+
+#### 安全隐患  
+
+RTF文件可以划分成文件头和文档区两部分，文件头和文档区都由控制字和控制符组成。控制符由一个反斜线\跟随单个非字母字符组成。控制符不需要分隔符。控制字是RTF用来标记管理文档信息的一种特殊格式的命令，其语法格式为：\字母序列<分隔符>。主要是根据控制字对RTF文件进行解析。  
+
+<html><body><table><tr><td>RTF文件内容</td><td>控制字</td><td>涵义</td></tr><tr><td rowspan="4">文件头</td><td>rLEN</td><td>版本号</td></tr><tr><td>fonttbl</td><td>字体表</td></tr><tr><td>filetbl</td><td>文件表</td></tr><tr><td>listtable</td><td>编目表</td></tr><tr><td rowspan="3">文档区</td><td>Tinfo</td><td>信息组</td></tr><tr><td>pict</td><td>图片</td></tr><tr><td>lobject</td><td></td></tr></table></body></html>  
+
+然而，RTF在解析对象类型时，需要调用公共控件或动态链接库去解析对象数据。而\objectdata等对象数据字段属于可存数据区域。在这些区域中，可以构造溢出数据，甚至恶意代码，从而触发OLE对象漏洞。  
+
+#### 攻击手法  
+
+将rtf文件伪装成word文档，利用了CVE_2017_11882漏洞——EQNEDT32.EXE进程在读入包含MathType的ole数据时，在拷贝公式字体名称时没有对名称长度进行校验，从而造成栈缓冲区溢出，载入恶意代码。  
+
+  
+
+  
+
+### No.3 详细分析  
+
+#### 静态分析  
+
+通过DIE打开，可以看到该文件本质上是一个RTF文件。  
+
+  
+
+# APT32常用诱饵文件分析  
+
+通过IDA查看，可以发现其嵌入了一个object对象且存在异常数据，判断此处存在OLE对象漏洞  
+
+  
+
+可以看到攻击者使用了\objupdate技巧，这可以使得嵌入对象在显示前就进行更新。即用户不需要点击该对象就能完成对象的加载  
+
+#### 动态分析  
+
+首先dump出其Object对象，找到其栈溢出地址。  
+
+  
+
+#### shellcode分析  
+
+通过栈溢出漏洞跳转到shellcode后，获取临时temp文件夹路径，将源文件内容复制过去并执行  
+
+遍历文件目录，通过检测vmGuestLibJava.dll检测虚拟机  
+
+如果不在虚拟机中，就会释放一系列DII文件，  
+
+# APT32常用诱饵文件分析  
+
+?C: C:\Users\Administrator\AppData\Local\Microsoft\Windows\Temporary Internet Files\Content.Word\WRS[2136AF6B-4EF2-4BAE-9ABD-1EF9C1FC34B2).tmp C:Users\Administrator\AppData\LocalMicrosoft\Windows\TemporaryInternetFilesContent.Word-WRS[24AC4BSF-95AC-4A84-92E3-7C4CBOD8C5B0).tmp C:(Users\AdministratorAppData\LocalMicrosoft\Windows\TemporarylnternetFilesContent.WordWRS[2F218670-7ED4F97-B055-80A8C1D8C71D）.tmp C:\Users\AdministratorAppData\LocalMicrosoft\Windows\TemporaryInternetFilesContent.Word-WRS[3CBCA621-4580-47CE-A820-F09C07607B71).tmp C:\Users\AdministratorAppData\LocaMicrosof(\Windows\TemporaryInternetFiles\Content.WordWRS[3F06B854-F02B-4429-909A-2C05DECA9149].tmp C:\Users\AdministratorAppData\LocaMicrosof(\Windows\TemporaryIntemetFiles\Content.WordWRS[4B3C23DF-D709-4EOA-BDOD-85BE4DFF249B).tm C:Users\AdministratorAppData\LocaMicrosof(\Windows\TemporaryInternetFiles\Content.WordWRS[4C67A5C3-C579-4603-B496-2ABAEED60D9A].tmp C:(Users\AdministratorAppData\LocaMicrosoft(Windows\TemporaryInternetFiles|Content.Word-WRS[5EE4F161-E1CB-450F-9853-714CD5BEA904].tmp C:\Users\Administrator\AppData\Local\Microsoft(\Windows\Temporary InternetFiles\Content.WordWRS[AA3FD916-3E1A-4E88-9808-096BE27CC0A4].tmp  
+
+#### Files Written  
+
+C:\PROGRA\~2\MICROS-1\OFFICE\DATA\opa12.dat C:(Users\AdministratorAppData\LocalMicrosof(\Windows\TemporaryInternetFiles\Content.WordWRS[2136AF6B-4EF2-4BAE-9ABD-1EF9C1FC34B2].m C:Users\Administrator\AppData\LocalMicrosoft\Windows\Temporary InternetFilesContent.Word-WRS[24AC4B8F-95AC-4A84-92E3-7C4CBOD8C5B0).tmp C:Users\AdministratorAppData\LocaMicrosoft(Windows\TemporarylnternetFiles\Content.WordWRS[2F218670-7ED44F97-B055-80A8C1D8C71D).tmp C:\Users\Administrator\AppData\LocalMicrosoft\Windows\Temporary InternetFiles\Content.WordWRS[3CBCA621-4580-47CE-A820-F09C07607B71].tmp C:Users\Administrator\AppData\Local\Microsoft\Windows\Temporary InternetFiles\Content.Word\\~WRS[3F06B854-F02B-4429-909A-2C05DECA9149].tmp C:\Users\AdministratorAppData\Local\Microsoft(\Windows\Temporary InternetFiles\Content.Word-WRS[4B3C23DF-D709-4EOA-BDOD-85BE4DFF249B].tmp C:Users\AdministratoriAppData\LocalMicrosoftWindows\Temporary InternetFiles|Content.Word-WRS[4C67A5C3-C579-4603-B496-2ABAEED60D9A].tmp C:Users\AdministratorAppData\LocaMicrosoftWindows\TemporaryInternetFilesContent.WordWRSstsEE4F161-E1CB450F-995C5BEA964.tm C:\Users\Administrator\AppData\LocalMicrosoft\Windows\TemporaryInternetFilesContent.Word-wRSfAA3FD916-3E1AE88-9808-o96BE27ccoA4.tmp  
+
+#### 然后加载执行shellcode  
+
+0； $\begin{array}{r l}{\ U2}&{{}=}\end{array}$ CreateFileW（a1，0x80000000,1u,0,3u,0x8θu,0); u3=u2; u4 $=$ (char \*）u2+1!=0； v5=0; if（v2=（HANDLE)-1） u5=GetFileSize(v2,0）; v4=u5>θ; duSize=0; if（u4） for（i=u5+4096;i&0xFFF;++i） duSize $=\dot{\textbf{1}}$ u1=UirtualA1l0c（0,i,0x1000u,0x40u）; v4=u1=0; NumberOfBytesRead $\u=\mathrm{~\bf~\mathfrak~{~\bf~\mathfrak~}~}$ if（u4） u4=ReadFile(u3, u1，u5，&Number0fBytesRead,0) && Number0fBytesRead >=u5; if（u3=（uoid\*）-1） CloseHandle(u3); ThreadId $=8$ if（u4） U7=CreateThread(0,0,(LPTHREAD_START_ROUTINE)u1,0,0,&ThreadId); u8=v7; u4=u7！=0; if（u7) WaitForSingleObjectEx(u7,0xFFFFFFFF,0); CloseHandle(u8); if u1） VirtualFree(u1,dwSize,0x4000u); return u4;  
+
+这段Shellcode解密出一个 PE文件并映射到内存中，dump出来后发现是{A96B020F-0000-466F-A96D-A91BBF8EAC96}.dIl，这个dll为"海莲花"组织使用，通过网络连接域名如下：  
+
+  
+情报IOC  
+
+### No.4yara规则  
+
+针对该样本，可以考虑从缓冲区溢出漏洞、嵌入shellcode两个特征出发，进行静态检测  
+
+1.缓冲区溢出漏洞：针对rtf文件的object对象，检测其objdata数据是否符号规范。  
+
+2.嵌入shellcode：同样本二。基于shellcode特征进行检测：PIC技术，识别执行位置，call/pop指令，loadLibrary等函数，查找并解析kernel32.dll等  
+
+# 关于山石网科情报中心  
+
+山石网科情报中心，涵盖威胁情报狩猎运维和入侵检测与防御团队。山石网科情报中心专注于保护数字世界的安全。以情报狩猎、攻击溯源和威胁分析为核心，团队致力于预防潜在攻击、应对安全事件。山石网科情报中心汇集网络安全、计算机科学、数据分析等专家，多学科融合确保全面的威胁分析。我们积极创新，采用新工具和技术提升分析效率。团队协同合作，分享信息与见解，追求卓越，为客户保驾护航。无论是防范未来威胁还是应对当下攻击，我们努力确保数字世界安全稳定。其中山石网科网络入侵检测防御系统，是山石网科公司结合多年应用安全的攻防理论和应急响应实践经验积累的基础上自主研发完成，满足各类法律法规如PCI、等级保护、企业内部控制规范等要求。  

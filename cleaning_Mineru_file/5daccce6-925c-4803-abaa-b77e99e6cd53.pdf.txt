@@ -1,0 +1,168 @@
+# APT-C-36（盲眼鹰）持续针对哥伦比亚开展攻击活动  
+
+原创高级威胁研究院360威胁情报中心2024年12月16日18:02北京  
+
+# APT-C-36  
+
+# 盲眼鹰  
+
+APT-C-36（盲眼鹰）是一个疑似来自南美洲的APT组织，主要目标位于哥伦比亚境内，以及南美洲的一些国家和地区，如厄瓜多尔、智利和巴拿马等。该组织自2018年被发现以来，持续发起针对哥伦比亚国家的政府部门、金融、保险等行业以及大型公司的定向攻击。  
+
+监测发现，APT-C-36（盲眼鹰）从2024年10月份起使用更加多样和复杂的攻击手段，持续针对哥伦比亚地区开展攻击活动。攻击者分多阶段释放和注入恶意载荷并内存中执行，以隐匿踪迹。在执行过程中还引入了反调试手段，以对抗分析。总体来看，该组织的技术手段较该组织过往水平有所提升。  
+
+## 一、攻击活动分析  
+
+### 1.攻击流程分析  
+
+  
+
+该攻击活动基本流程如图所示。恶意dll文件在受害者终端上通过执行正常应用而被加载起来，进而从同文件夹下的加密数据中解密出需要的数据和Shellcode，分阶段对操作系统中的dll文件和exe文件进行注入操作，最终加载执行开源远控工具asyncRATclient，实现对受害者计算机的远程控制。  
+
+### 2.载荷投递分析  
+
+攻击者使用SVG文件作为投递诱饵，文字内容为仿冒哥伦比亚司法部向该国人群或组织发送的文件，内嵌一个文件下载链接（一般来自Clarodrive、Dropbox等拉丁美洲用户常用网盘），压缩包文件名为DEMANDALABORAL.XZ（劳动力需求）等。  
+
+ASUNTO:CITACIONACOMPARECENCIA DELITO: APROPIACION INDEBIDA (ART. 236) JUICION.8:7453264  
+
+下载并解压后文件夹内含多个文件，包括一个正常的exe文件，多个dl文件（其中之一为恶意程序），两个加密的数据文件。双击exe文件运行后，便开始进行多阶段解密和注入。  
+
+  
+
+### 第一阶段  
+
+首先从"kcc"文件中解密出相关函数或模块名称LoadlibraryA、VirtualProtect、dbghelp.dll，用以之后实施注入操作。其中VirtualProtect是Windows操作系统中专门用于修改内存页保护属性的API，常用于需要在内存中修改代码或数据的场景。攻击者正是借助这个API实现了对正常PE文件的修改注入操作。  
+
+  
+
+<html><body><table><tr><td>地址</td><td colspan="11">十六进制</td><td colspan="2">ASCII</td></tr><tr><td>026D3BE2</td><td>30</td><td>181465158447128442200004 07250080811544184888808610</td><td></td><td>744080804500401454451588544</td><td></td><td></td><td></td><td>6F</td><td></td><td></td><td></td><td></td><td>o.LoadLib</td></tr><tr><td>026D3BF2</td><td>3726818418090408158180406408</td><td></td><td></td><td>88000001080080000000000</td><td>0100045508001500045611580882428</td><td></td><td>47270008100010515994800459</td><td></td><td>44161666600060045880080881599F8</td><td></td><td></td><td>raryA..</td><td>Virtualpr</td></tr><tr><td>026D3C02</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>otect.</td><td>dbghelp. .</td></tr><tr><td>026D3C12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>9520080820072881054153886008</td><td>2724558428054594842940</td><td></td></tr><tr><td>026D3C22</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>026D3C32</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>026D3C42</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>D</td><td></td></tr><tr><td>026D3C52</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>026D3C62</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>026D3C72</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>026D3C82</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>026D3C92</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>EO.A.+E..M</td></tr><tr><td>026D3CA2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>+ E.MOj..UER.EOP</td></tr><tr><td>026D3CB2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>MO.A.QeC....A</td></tr><tr><td>026D3CC2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>Eo.}o.u.e0....uo</td></tr><tr><td>026D3CD2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>A..Ue.EO.EO.MO.</td></tr><tr><td>026D3CE2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>ReE....A..EO.EO</td></tr><tr><td>026D3CF2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>A..Ea.Me.U...</td></tr><tr><td>026D3D02</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>uH.}u.uB.Me.</td></tr><tr><td>026D3D12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>Ma.Ue.B..A..Ei.M</td></tr><tr><td>026D3D22</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>@.U..BdyD.Eu.</td></tr><tr><td>026D3D32</td><td></td><td></td><td></td><td></td><td></td><td>655400890051800048815458407088840</td><td></td><td></td><td>15560000045028200451829088</td><td></td><td></td><td>8070</td><td>MOQ.UaR.EuPe..</td></tr><tr><td>026D3D42</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>Mo.Mo.MoeS.</td></tr></table></body></html>  
+
+然后加载dbghelp.dll并调用VirtualProtect修改权限，复制数据到dbghelp.dl进行算改。  
+
+  
+
+我们dump出注入的内容，可以看到如下代码。首先是动态获取各类函数地址。  
+
+  
+
+然后将文件夹内的"uvlrbci"文件内容的解密，解密算法为与0xB15E495D的4字节异或运算。  
+
+  
+
+### 第二阶段  
+
+将上述解密出来的内容再次进行解压，解压出的明文内包含第二阶段注入操作需要的相关字符串和代码。  
+
+  
+
+  
+
+进而使用与第一阶段类似的方法将代码注入pla.dll。  
+
+str_copy（（char \*)(v31_decompressed_data + 244),v30);// "%windir%11SysWOw64\\pla.dlL" v30=（_WORD\*)sub_DDθ（(int)v3θ);   
+v19 =loadlibrary_second_arg（（(int)function_addr,(int)v30);// loadlibrary(pla.dll) v4 =navigate_to_peheader（v19);   
+pladll_entry_addr =（int （_cdecl \*)（int, int, int, int \*))（\*（_DWORD \*)（v4 +44)+v19); V18=(_BYTE\*)globalalloc(64,v33_size);   
+copy_pladll_addr(v18, pladll_entry_addr,v33_size);   
+\*（_QWORD\*)（v24+θxCC0)=（int)v18;   
+V26=0:   
+virtual_protect(pladll_entry_addr,v33_size, data[1],&v26);   
+copy_pladll_addr(pladll_entry_addr,v3, v33_size);   
+virtual_protect(pladll_entry_addr, v33_size, v26,&v26);   
+v2[3] = （int)pladll_entry_addr;   
+v2[0]=data[1];   
+v2[1] =（int)pladll_entry_addr;   
+v2[2] =v33_size;   
+return pladll_entry_addr(v31_decompressed_data,v24,v25,v2)  
+
+注入代码的第一步同样是动态获取函数地址，并在用户临时文件夹下新建随机命名的临时文件，以备下一阶段写入Shellcode。  
+
+  
+
+  
+
+  
+
+紧随其后的指令便转入64位模式执行，待执行完成后，再通过以下指令返回32位模式。  
+
+call \$+5   
+mov dword ptr [esp+4], 23h add dword ptr [esp], ODh retf  
+
+通过这种方法，该样本顺利实现了64位NtCreateThreadEx、NtWriteVirtualMemory等APl调用，注入下一阶段Shellcode，创建cmd.exe进程，并以管道方式与之通信，使它执行命令。  
+
+  
+
+在cmd.exe进程中，读取了第二阶段创建的临时文件并解密出下一阶段Shellcode。  
+
+  
+
+  
+
+  
+edx=A'\n  
+
+742B1E51   
+
+
+<html><body><table><tr><td rowspan="7">6A01 6A00 6A00 FF750C 6A00 6AOA</td><td>FF752C FF7528 6A00 6A00 FF751C</td><td>push dwordptrss:[ebp+2c push dword ptr ss:[ebp+28 push 0</td><td></td></tr><tr><td>push 0 push</td><td>dword ptrss:[ebp+1c]</td><td></td></tr><tr><td>push 1 push 0 push</td><td></td><td></td></tr><tr><td>push push</td><td>0 dwordptrss:[ebp+c]</td><td>[dwordptrss:[ebp+0c]]:L"c:\\wINDows\\Microsoft.NET\\Framework\\v4.0.30319\\MSBu11d.exe</td></tr><tr><td>push push</td><td>0 A</td><td></td></tr><tr><td>50 FF75 F0 push ca11 edi</td><td>eax dword ptr ss:[ebp-10]</td><td>[dword ptr ss:[ebp-1o]]:CreateProcessw</td></tr><tr><td>FFD7 8B4E68 83C438 8945F0 8D45F4 50</td><td>mov ecx,dwordptr ds:[es1+68] ppe esp,38 mov dword ptr ss:[ebp-10],eax</td><td>[dwordptr ds:[esi+68]]:VirtualProtect</td></tr><tr><td></td><td></td><td>[dword ptr ss:[ebp-1o]]:CreateProcessw</td></tr><tr><td>6A40 FF760C 57 FFD1 callecx 85C0 test eax,eax</td><td>lea eax,dword ptr ss:[ebp-c] push eax push 40 push dword ptr ds:[esi+c] push edi</td><td></td></tr></table></body></html>  
+
+\Windows\Microsoft.NET\Framework\v4.0.3039\MSBuild.exe",以创建线程方式注入最终攻击组件。  
+
+  
+
+### 3.攻击组件分析  
+
+最终攻击组件为经过混淆的asyncRAT客户端，这是一款2019年发布的开源远控工具，使用C#语言编写（https://github.com/NYAN-x-CAT/AsyncRAT-C-Sharp）。主要功能包括记录键盘、监控屏幕、读取网页浏览器中保存的密码、持久化驻留、加解密、与C2服务器进行网络通信等。  
+
+  
+
+  
+
+if (flag (| flag2) text = text. ToUpper():   
+else text = text.ToLower();   
+1+ (num >= 112 && num <= 135) string str = "["; Keys keys = (Keys)num; text = str + keys.ToString() +   
+else Keys keys = (Keys)num; string text2 = keys.ToString(): uint num2 = cttcURWjgg.EoZWdXWYmlAjB (text2): if (num2 <= 3250860581U) if (num2 <= 497839467U) if (num2 != 298493515U) if (num2 == 497839467U) if (text2 == "LContro1Key") text = "[CTRL]": else if (text2 == "Capita1") if (flag) text = "[CAPSLOCK: OFF]": else text = "[CAPSLOCK: ON]":  
+
+本例中使用的asyncRAT客户端样本的配置信息密文如下:  
+
+  
+
+攻击者C2服务器的域名为warpower[.]dynuddns.net，端口为7171。  
+
+  
+
+其他配置信息如下：  
+
+<html><body><table><tr><td>字段</td><td>详情</td></tr><tr><td>Version</td><td>"| CRACKED BY https://t.me/xworm_v2"</td></tr><tr><td>Install</td><td>False</td></tr><tr><td>MTX</td><td>AsyncMutex_6Sl8OkPnk</td></tr><tr><td>Install</td><td>FALSE</td></tr><tr><td>Pastebin</td><td>IInN</td></tr><tr><td>Anti</td><td>False</td></tr><tr><td>BDOS</td><td>True</td></tr><tr><td>Group</td><td>False</td></tr><tr><td>Hwid</td><td>"WAR"</td></tr><tr><td>Serversignature</td><td>"FB9C943253C9E6266914"</td></tr></table></body></html>  
+
+## 归属研判  
+
+判断该攻击活动与APT-C-36（盲眼鹰）组织相关，原因如下：  
+
+(1）该攻击活动与该组织近期的钓鱼内容和目标人群十分类似l1;(2)该攻击活动与[2]中近期揭露的手法和最终载荷类似，均存在图片形式文件和使用asyncRAT开源远控工具的情况。  
+
+与过往行为区别之处在于，本次攻击活动隐藏自身的手段主要在于恶意载荷的多阶段反复注入和"Heaven'sGate"对抗手段的引l入，这说明该组织的技术存在向高级阶段演进的趋势。  
+
+# Hash:  
+
+b841d408448f2a07f308ced1589e7673 e4d26ef4eb535ed7a5a5694ec804159f d22b9da713ab36102c9c3d812af8c12d d168f18b79f9f33690f011d1deb1e7cf 51865d714d444e677aa12adc8a399562 cb7417248c5fd3c7c76eb21b670a7a7f  
+
+C2:   
+https://Warpower[.]dynuddns.net   
+172[.]233.162.230  
+
+## 参考  
+
+[1]https://mp.weixin.qq.com/s/DDCCjhBjUTa7la4Hggsa1A [2]https://securelist.com/blindeagle-apt/113414/  
+
+## 团队介绍  
+
+TEAM INTRODUCTION  
+
+# 360高级威胁研究院  
+
+360高级威胁研究院是360政企安全集团的核心能力支持部门，由360资深安全专家组成，专注于高级威胁的发现、防御、处置和研究，曾在全球范围内率先捕获双杀、双星、噩梦公式等多起业界知名的0day在野攻击，独家披露多个国家级APT组织的高级行动，赢得业内外的广泛认可，为360保障国家网络安全提供有力支撑。  
+
+#APT146#南美地区8#APT-C-36盲眼鹰7  
+
+APT·目录 $\equiv$  
+
+<上一篇·APT-C-08（蔓灵花）组织新型攻击组件分析报告  

